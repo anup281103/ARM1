@@ -1,0 +1,87 @@
+
+<div class="row">
+  <div class="col-sm-12">
+    <app-card cardTitle="Basic Component" [options]="false">
+      <h5>{{ isEdit ? 'Update' : 'Add' }} New Demo</h5>
+      <hr />
+      <div class="row">
+        <div class="col-md-6">
+          <form action="javascript:" #demoForm="ngForm" (ngSubmit)="saveDemoRecord()">
+            <div class="form-group">
+              <label for="name">First Name</label>
+              <input type="text" class="form-control" name="name" [(ngModel)]="newDemo.name" id="name" placeholder="Enter First Name" #nameInput="ngModel" required />
+              <div *ngIf="nameInput.invalid && (nameInput.dirty || nameInput.touched)" class="danger">
+                First Name is required.
+            </div>
+            </div>
+            <div class="form-group">
+              <label for="lastName">Last Name</label>
+              <input type="text" class="form-control" name="lastName" [(ngModel)]="newDemo.lastName" id="lastName" placeholder="Enter Last Name" #lastNameInput="ngModel" required />
+              <div *ngIf="lastNameInput.invalid && (lastNameInput.dirty || lastNameInput.touched)" class="danger">
+                Last Name is required.
+            </div>
+            </div>           
+            <button type="submit" class="btn btn-success" [disabled]="demoForm.invalid">{{ isEdit ? 'Update' : 'Submit' }}</button>
+          </form>
+        </div>
+        <div class="col-md-6">
+          <form action="javascript:" #demoForm="ngForm">
+             <div class="form-group">
+              <label for="mobile">Mobile</label>
+              <input type="text" class="form-control" name="mobile" [(ngModel)]="newDemo.mobile" id="mobile" placeholder="Enter Mobile Number" #mobileInput="ngModel" required pattern="[0-9]{10}" maxlength="10" (keypress)="allowNumbers($event)"/>
+              <div *ngIf="mobileInput.invalid && (mobileInput.dirty || mobileInput.touched)" class="danger">
+                <div *ngIf="mobileInput.errors?.['required']">Mobile number is required.</div>
+                <div *ngIf="mobileInput.errors?.['pattern']">Only numeric values (10 digits) are allowed.</div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="genderSelect" name="gender">Select Gender</label>
+              <select class="form-control" id="genderSelect" name="gender" [(ngModel)]="newDemo.gender">
+                <option [ngValue]="true">Male</option>
+                <option [ngValue]="false">Female</option>
+              </select>
+            </div>
+          </form>
+        </div>
+      </div>      
+    </app-card>
+  </div>
+</div>
+
+<div class="row">
+  <div class="col-sm-12">
+    <app-card cardTitle="Demo Record" [options]="false" blockClass="table-border-style">
+      <a href="http://localhost:59369/Employee/EmployeeOnboard">eHRMS</a>
+      <div class="table-responsive">        
+        <table class="table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>First Name</th>
+              <th>Last Name</th>
+              <th>Mobile</th>
+              <th>Gender</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of demos; let i = index" [ngClass]="getRowClass(i)">
+                <th>{{ p.id }}</th>
+                <td>{{ p.name }}</td>
+                <td>{{ p.lastName }}</td>
+                <td>{{ p.mobile }}</td>
+                <td>{{ p.gender === true ? 'Male' : 'Female' }}</td>
+                <td>
+                    <button class="btn btn-warning" (click)="editDemo(p)" *ngIf="!isCancel">Edit</button>
+                    <button type="button" class="btn btn-secondary" (click)="cancelEdit()" *ngIf="isEdit">Cancel</button>
+                    <button class="btn btn-danger" (click)="deleteDemo(p.id)">Delete</button>
+                </td>
+            </tr>            
+          </tbody>
+        </table>
+      </div>
+    </app-card>
+  </div>
+</div>
+
+

@@ -1,0 +1,112 @@
+.dashboard-container {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+/* SESSION CARD */
+.session-card {
+  flex: 1 1 350px;
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 22px;
+  position: relative;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  border-left: 6px solid #1e47c5;
+}
+
+/* Badge */
+.status-badge {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  background: #28a745;
+  color: #ffffff;
+  padding: 4px 12px;
+  border-radius: 14px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+/* Title */
+.card-title {
+  color: #1e47c5;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 18px;
+}
+
+/* Session rows */
+.session-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rowcal {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.label {
+  min-width: 100px;
+  font-weight: 600;
+  color: #555;
+}
+
+.value {
+  color: #222;
+  font-size: 0.95rem;
+  margin-left: 10px;
+}
+
+.muted {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+/* Truncate long session id */
+.truncate {
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* INFO CARD */
+.info-card {
+  flex: 1 1 300px;
+  background: linear-gradient(135deg, #e8f1ff, #f9fcff);
+  border-radius: 20px;
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+}
+
+.info-icon {
+  font-size: 1.6rem;
+}
+
+.info-text {
+  font-size: 0.95rem;
+  color: #1a1a1a;
+  margin: 0;
+}
+
+.card{
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        border: 0;
+}
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .dashboard-container {
+    flex-direction: column;
+  }
+
+  .truncate {
+    max-width: 100%;
+  }
+}
