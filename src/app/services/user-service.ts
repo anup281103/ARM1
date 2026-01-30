@@ -1,26 +1,28 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject } from 'rxjs';
-import { UserModel } from 'src/app/models/user-detail.model';
-
+import { HttpClient } from '@angular/common/http';
+import { environment } from 'src/environments/environment';
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
-  private userSource = new BehaviorSubject<UserModel | null>(null);
-  user$ = this.userSource.asObservable();
+    private baseUrl = environment.apiUrl; 
+  //  baseUrl = `${this.baseUrl}`;
 
-  // 🔹 Set user globally
-  setUser(user: UserModel) {
-    this.userSource.next(user);
+  private userSubject = new BehaviorSubject<any>(null);
+  user$ = this.userSubject.asObservable();
+
+  constructor(private http: HttpClient) {}
+
+  setUser(user: any) {
+    this.userSubject.next(user);
   }
 
-  // 🔹 Get current user (sync)
-  getUser(): UserModel | null {
-    return this.userSource.value;
-  }
-
-  // 🔹 Clear user (e.g. logout)
   clearUser() {
-    this.userSource.next(null);
+    this.userSubject.next(null);
+  }
+
+  logout() {
+    return this.http.get(`${this.baseUrl}/api/method/logout`, { withCredentials: true });
   }
 }

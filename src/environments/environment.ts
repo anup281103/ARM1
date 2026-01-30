@@ -7,7 +7,11 @@ import packageInfo from '../../package.json';
 export const environment = {
   appVersion: packageInfo.version,
   production: false,
-  apiUrl: 'http://localhost:4200',
+  // [CRITICAL] KEEP THIS EMPTY IN DEV MODE
+  // While empty, requests go to 'localhost:4200/api'. 
+  // The Angular Proxy (proxy.conf.json) INTERCEPTS this and tunnels it to '10.120.9.114:8000'.
+  // This bypasses the 403 CORS Error you see when connecting directly.
+  apiUrl: '', 
   master_baseUrl: 'http://localhost:55612/api/',
   legacy_app_baseUrl: 'http://localhost:59369'
 };

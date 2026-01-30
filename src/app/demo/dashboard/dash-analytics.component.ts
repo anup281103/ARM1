@@ -10,6 +10,7 @@ import { ProductSaleComponent } from './product-sale/product-sale.component';
 import { ApexOptions, ChartComponent, NgApexchartsModule } from 'ng-apexcharts';
 import { UserModel } from 'src/app/models/user-detail.model';
 import { UserService } from 'src/app/services/user-service';
+import { AuthService } from 'src/app/services/auth.service';
 @Component({
   selector: 'app-dash-analytics',
   imports: [SharedModule, NgApexchartsModule, ProductSaleComponent],
@@ -26,10 +27,12 @@ export class DashAnalyticsComponent implements OnInit {
   chartOptions_2!: Partial<ApexOptions>;
   chartOptions_3!: Partial<ApexOptions>;
 
-  private userService = inject(UserService);
+  // User Session
+  user: any = null;
+  serverTime: Date = new Date();
 
   // constructor
-  constructor() {
+  constructor(private authService: AuthService) {
     this.chartOptions = {
       chart: {
         height: 205,
@@ -217,20 +220,35 @@ export class DashAnalyticsComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    window.addEventListener('message', (event) => {
-      if (event.data?.key === 'lstUserDetail') {
-        localStorage.setItem('lstUserDetail', event.data.value);
-        console.log('Received and saved globally:', event.data.value);
+    this.loadUserSession();
+  }
+
+  loadUserSession() {
+    this.authService.getLoggedInUser().subscribe({
+      next: (res) => {
+        console.log('DashAnalytics: get_logged_user response:', res);
+        const userId = res.message;
+        if (userId) {
+          this.authService.getUserDetails(userId).subscribe({
+            next: (userRes) => {
+              this.user = userRes.data;
+              this.serverTime = new Date();
+              console.log('DashAnalytics: Loaded user from API:', this.user);
+            },
+            error: (err) => {
+                console.error('DashAnalytics: Failed to load user details', err);
+                // Fallback
+                if (!this.user) {
+                    this.user = { name: userId, full_name: userId };
+                }
+            }
+          });
+        }
+      },
+      error: (err) => {
+        console.error('DashAnalytics: Failed to get logged in user', err);
       }
     });
-
-    // Load from localStorage if already set
-    const storedData = localStorage.getItem('lstUserDetail');
-    if (storedData) {
-      const userData: UserModel = JSON.parse(storedData);
-      this.userService.setUser(userData);
-      console.log('Loaded from localStorage:', userData);
-    }
   }
 
   cards = [

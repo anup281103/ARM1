@@ -88,7 +88,7 @@
       <div class="dropdown-menu dropdown-menu-end profile-notification" ngbDropdownMenu>
         <div class="pro-head">
           <img src="assets\images\user\avtar-icon.png" class="img-radius" alt="User-Profile-Image" />
-          <span>{{userName}}</span>
+          <span>{{ userName }}</span>
           <a href="javascript:" class="dud-logout" title="Logout">
             <i class="feather icon-log-out"></i>
           </a>
@@ -113,9 +113,8 @@
             </a>
           </li>
           <li>
-            <a href="javascript:" class="dropdown-item">
-              <i class="feather icon-lock"></i>
-              Logout
+            <a href="javascript:" class="dud-logout" title="Logout" (click)="logout()">
+              <i class="feather icon-log-out">Logout</i>
             </a>
           </li>
         </ul>

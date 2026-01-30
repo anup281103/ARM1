@@ -1,0 +1,17 @@
+{
+  "/api": {
+    "target": "http://10.120.9.114:8000",
+    "secure": false,
+    "changeOrigin": true,
+    "cookieDomainRewrite": {
+      "*": ""
+    },
+    "pathRewrite": {
+      "^/api": "/api"
+    },
+    "headers": {
+      "Origin": "http://10.120.9.114:8000"
+    },
+    "logLevel": "debug"
+  }
+}

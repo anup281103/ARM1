@@ -14,24 +14,63 @@
     <h3 class="card-title">Session Info</h3>
 
     <div class="session-details">
-      <div class="rowcal">
-        <span class="label">User</span>
-        <span class="value">RG Arms</span>
+      <div class="rowcal mb-2" *ngIf="user?.user_image">
+        <img [src]="user.user_image" class="user-avatar" alt="User Avatar" onerror="this.hidden=true">
       </div>
 
       <div class="rowcal">
-        <span class="label">Session ID</span>
-        <span class="value truncate">51416f87f9b6c603eb703e803b2de92279273f1e7cf36f0c8d717acb</span>
+        <span class="label">User</span>
+        <span class="value fw-bold">{{ user?.full_name || 'Guest' }}</span>
+      </div>
+
+      <div class="rowcal">
+        <span class="label">User ID</span>
+        <span class="value truncate">{{ user?.name || 'N/A' }}</span>
+      </div>
+
+      <div class="rowcal">
+        <span class="label">Email</span>
+        <span class="value truncate">{{ user?.email || '-' }}</span>
+      </div>
+
+      <div class="rowcal">
+        <span class="label">Mobile</span>
+        <span class="value">{{ user?.mobile_no || '-' }}</span>
+      </div>
+
+       <div class="rowcal">
+        <span class="label">Department</span>
+        <span class="value">{{ user?.department || '-' }}</span>
+      </div>
+
+      <div class="rowcal">
+        <span class="label">Designation</span>
+        <span class="value">{{ user?.designation || '-' }}</span>
+      </div>
+
+      <div class="rowcal">
+        <span class="label">Language</span>
+        <span class="value">{{ user?.language || '-' }}</span>
+      </div>
+
+      <div class="rowcal">
+        <span class="label">Last Login</span>
+        <span class="value">{{ user?.last_login | date:'short' }}</span>
       </div>
 
       <div class="rowcal">
         <span class="label">Roles</span>
-        <span class="value">All, Desk User, Guest, ALIS Dealer</span>
+        <span class="value">
+            <ng-container *ngFor="let role of user?.roles; let last = last">
+                {{ role.role }}{{ !last ? ', ' : '' }}
+            </ng-container>
+            <span *ngIf="!user?.roles?.length">Guest</span>
+        </span>
       </div>
 
       <div class="rowcal muted">
         <span class="label">Server Time</span>
-        <span class="value">2026-01-22 11:24:53</span>
+        <span class="value">{{ serverTime | date:'yyyy-MM-dd HH:mm:ss' }}</span>
       </div>
     </div>
   </div>
@@ -64,37 +103,40 @@
       </div>
 
       <div class="col-md-6">
-        <label class="form-label text-uppercase  fw-semibold">Transaction Date</label>
-        <input type="date" class="form-control" value="2026-01-22">
+        <label class="form-label text-uppercase fw-semibold">Transaction Date</label>
+        <input type="date" class="form-control" [(ngModel)]="requestDate">
       </div>
     </div>
 
     <!-- ROW 2 -->
     <div class="row g-3 mb-3">
       <div class="col-md-6">
-        <label class="form-label text-uppercase  fw-semibold">Purpose</label>
-        <select class="form-select">
-          <option>Purchase</option>
+        <label class="form-label text-uppercase fw-semibold">Purpose</label>
+        <select class="form-select" [(ngModel)]="purpose">
+          <option value="Purchase">Purchase</option>
+          <option value="Material Transfer">Material Transfer</option>
+          <option value="Material Issue">Material Issue</option>
+          <option value="Manufacture">Manufacture</option>
         </select>
       </div>
 
       <div class="col-md-6">
-        <label class="form-label text-uppercase  fw-semibold">Required By</label>
-        <input type="date" class="form-control" value="2026-01-22">
+        <label class="form-label text-uppercase fw-semibold">Required By</label>
+        <input type="date" class="form-control" [(ngModel)]="requiredByDate">
       </div>
     </div>
 
     <!-- ROW 3 -->
     <div class="row g-3 mb-4">
       <div class="col-md-6">
-        <label class="form-label text-uppercase  fw-semibold">Company</label>
+        <label class="form-label text-uppercase fw-semibold">Company</label>
         <select class="form-select">
           <option>MPSEDC</option>
         </select>
       </div>
 
       <div class="col-md-6">
-        <label class="form-label text-uppercase  fw-semibold">Price List</label>
+        <label class="form-label text-uppercase fw-semibold">Price List</label>
         <select class="form-select">
           <option>Standard Buying</option>
         </select>
@@ -104,7 +146,7 @@
     <!-- ITEMS HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-2">
       <h6 class="fw-semibold mb-0">ITEMS</h6>
-      <a href="#" class="text-primary small fw-semibold text-decoration-none">+ Add Item</a>
+      <a href="javascript:void(0)" class="text-primary small fw-semibold text-decoration-none">+ Add Item</a>
     </div>
 
     <!-- ITEM CARD -->
@@ -112,38 +154,43 @@
 
       <div class="d-flex justify-content-between mb-3">
         <span class="fw-semibold ">Item 1</span>
-        <a href="#" class="text-danger small text-decoration-none">Remove</a>
+        <a href="javascript:void(0)" class="text-danger small text-decoration-none">Remove</a>
       </div>
 
       <div class="row g-3">
         <div class="col-md-4">
           <label class="form-label ">Item Code</label>
-          <input type="text" class="form-control" value="ITEM-0001">
+          <input type="text" class="form-control" list="itemOptions" [(ngModel)]="itemCode" placeholder="Type or select item">
+          <datalist id="itemOptions">
+            <option *ngFor="let item of itemsList" [value]="item.item_code">{{ item.item_name }}</option>
+          </datalist>
         </div>
 
         <div class="col-md-4">
           <label class="form-label ">Quantity</label>
-          <input type="number" class="form-control">
+          <input type="number" class="form-control" [(ngModel)]="quantity" min="1">
         </div>
 
         <div class="col-md-4">
           <label class="form-label ">Warehouse</label>
-          <input type="text" class="form-control" value="Main - WH">
+          <select class="form-select" [(ngModel)]="warehouse">
+             <option *ngFor="let wh of warehouseList" [value]="wh.name">{{ wh.warehouse_name }} ({{ wh.name }})</option>
+          </select>
         </div>
 
         <div class="col-md-4">
           <label class="form-label ">Required By</label>
-          <input type="date" class="form-control" value="2026-01-22">
+          <input type="date" class="form-control" [(ngModel)]="requiredByDate">
         </div>
 
         <div class="col-md-4">
           <label class="form-label ">UOM</label>
-          <select class="form-select"></select>
+          <input type="text" class="form-control" value="Nos" readonly> 
         </div>
 
         <div class="col-md-4">
           <label class="form-label ">Description</label>
-          <input type="text" class="form-control" placeholder="Optional">
+          <input type="text" class="form-control" placeholder="Optional" [(ngModel)]="description">
         </div>
       </div>
 

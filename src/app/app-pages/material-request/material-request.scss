@@ -61,6 +61,15 @@
   margin-left: 10px;
 }
 
+.user-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-left: 10px;
+    border: 2px solid #e0e0e0;
+}
+
 .muted {
   color: #888;
   font-size: 0.85rem;

@@ -1,11 +1,7 @@
-// angular import
 import { Component, inject, OnInit } from '@angular/core';
+import { Router } from '@angular/router';
 import { animate, style, transition, trigger } from '@angular/animations';
-
-// bootstrap import
 import { NgbDropdownConfig } from '@ng-bootstrap/ng-bootstrap';
-
-// project import
 import { SharedModule } from 'src/app/theme/shared/shared.module';
 import { ChatUserListComponent } from './chat-user-list/chat-user-list.component';
 import { ChatMsgComponent } from './chat-msg/chat-msg.component';
@@ -29,33 +25,38 @@ import { UserService } from 'src/app/services/user-service';
   ]
 })
 export class NavRightComponent implements OnInit {
-  // public props
-  visibleUserList: boolean;
-  chatMessage: boolean;
+  visibleUserList = false;
+  chatMessage = false;
   friendId!: number;
-  userName: string = '';  
+  userName = '';
 
   private userService = inject(UserService);
-
-  // constructor
-  constructor() {
-    this.visibleUserList = false;
-    this.chatMessage = false;
-  }
+  private router = inject(Router);
 
   ngOnInit(): void {
-    //this.userName = this.user.UserName;
-    this.userService.user$.subscribe(user => {
+    this.userService.user$.subscribe((user) => {
       if (user) {
         this.userName = user.UserName;
       }
     });
   }
 
-  // public method
-  // eslint-disable-next-line
   onChatToggle(friendID: any) {
     this.friendId = friendID;
     this.chatMessage = !this.chatMessage;
+  }
+
+  logout() {
+    this.userService.logout().subscribe({
+      next: () => {
+        this.userService.clearUser();
+        this.router.navigate(['/login']); // adjust route if needed
+      },
+      error: () => {
+        // even if API fails, force logout on UI
+        this.userService.clearUser();
+        this.router.navigate(['/login']);
+      }
+    });
   }
 }

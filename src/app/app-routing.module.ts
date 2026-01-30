@@ -21,7 +21,7 @@ const routes: Routes = [
         path: '',
         //redirectTo: '/contractual-employee',
         //redirectTo: '/resgister-profile',
-        redirectTo: '/analytics',
+        redirectTo: '/login',
         pathMatch: 'full'
       },
       {
@@ -34,11 +34,10 @@ const routes: Routes = [
       },
 
       {
-        path:'materialRequest',
-        component:MaterialRequest
+        path: 'materialRequest',
+        component: MaterialRequest
       },
-      
-      
+
       // {
       //   path: 'chart',
       //   loadComponent: () => import('./demo/chart-maps/core-apex.component').then((c) => c.CoreApexComponent)
@@ -54,7 +53,7 @@ const routes: Routes = [
       {
         path: 'sample-page',
         loadComponent: () => import('./demo/other/sample-page/sample-page.component').then((c) => c.SamplePageComponent)
-      },
+      }
       // {
       //   path: 'resgister-employee',
       //   loadComponent: () => import('./employee/register/register').then((c) => c.Register)
@@ -74,7 +73,7 @@ const routes: Routes = [
       //       ]
       //     }
       //   ]
-      // } 
+      // }
     ]
   },
   {
@@ -83,12 +82,12 @@ const routes: Routes = [
     children: [
       {
         path: 'login',
-        loadComponent: () => import('./demo/pages/authentication/sign-up/sign-up.component').then((c) => c.SignUpComponent)
+        loadComponent: () => import('./demo/pages/authentication/sign-in/sign-in.component').then((c) => c.SignInComponent)
       },
       {
         path: 'register',
         loadComponent: () => import('./demo/pages/authentication/sign-in/sign-in.component').then((c) => c.SignInComponent)
-      },
+      }
       // {
       //   path: 'contractual-registration',
       //   loadComponent: () => import('./ContractualEmployee/contractual-registration/contractual-registration').then((c) => c.ContractualRegistration)
