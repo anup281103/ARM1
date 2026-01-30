@@ -130,8 +130,8 @@
     <div class="row g-3 mb-4">
       <div class="col-md-6">
         <label class="form-label text-uppercase fw-semibold">Company</label>
-        <select class="form-select">
-          <option>MPSEDC</option>
+        <select class="form-select" [(ngModel)]="company">
+          <option *ngFor="let comp of companyList" [value]="comp.name">{{ comp.company_name }}</option>
         </select>
       </div>
 
@@ -139,6 +139,16 @@
         <label class="form-label text-uppercase fw-semibold">Price List</label>
         <select class="form-select">
           <option>Standard Buying</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- ROW 4 - District -->
+    <div class="row g-3 mb-4">
+      <div class="col-md-6">
+        <label class="form-label text-uppercase fw-semibold">District</label>
+        <select class="form-select" [(ngModel)]="district">
+          <option *ngFor="let dist of districtList" [value]="dist.name">{{ dist.district_name || dist.name }}</option>
         </select>
       </div>
     </div>

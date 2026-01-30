@@ -28,6 +28,10 @@ export class MaterialRequest implements OnInit {
   // Lists for dropdowns
   itemsList: any[] = [];
   warehouseList: any[] = [];
+  companyList: any[] = [];
+  districtList: any[] = [];
+  company = '';
+  district = '';
 
   // User Session
   user: any = null;
@@ -96,6 +100,28 @@ export class MaterialRequest implements OnInit {
       },
       error: (err) => console.error('Failed to load warehouses', err)
     });
+
+    // Fetch Companies
+    this.materialService.getCompanies().subscribe({
+      next: (res: any) => {
+        this.companyList = res.data || [];
+        if (this.companyList.length > 0) {
+          this.company = this.companyList[0].name;
+        }
+      },
+      error: (err) => console.error('Failed to load companies', err)
+    });
+
+    // Fetch Districts
+    this.materialService.getDistricts().subscribe({
+      next: (res: any) => {
+        this.districtList = res.data || [];
+        if (this.districtList.length > 0) {
+          this.district = this.districtList[0].name;
+        }
+      },
+      error: (err) => console.error('Failed to load districts', err)
+    });
   }
   
   submit() {
@@ -112,6 +138,8 @@ export class MaterialRequest implements OnInit {
       transaction_date: this.requestDate,
       material_request_type: this.purpose,
       schedule_date: this.requiredByDate,
+      company: this.company,
+      custom_district: this.district,
       items: [
         {
           item_code: this.itemCode,

@@ -40,4 +40,22 @@ export class MaterialService {
     const fields = JSON.stringify(["warehouse_name", "name"]);
     return this.http.get(`${this.baseUrl}/api/resource/Warehouse?fields=${fields}`, { withCredentials: true });
   }
+
+  /**
+   * Fetch Companies from ERPNext
+   * Endpoint: /api/resource/Company
+   */
+  getCompanies(): Observable<any> {
+    const fields = JSON.stringify(["name", "company_name", "abbr"]);
+    return this.http.get(`${this.baseUrl}/api/resource/Company?fields=${fields}`, { withCredentials: true });
+  }
+
+  /**
+   * Fetch Districts from ERPNext
+   * Endpoint: /api/resource/District
+   */
+  getDistricts(): Observable<any> {
+    const fields = JSON.stringify(["name", "district_name"]);
+    return this.http.get(`${this.baseUrl}/api/resource/District?fields=${fields}`, { withCredentials: true });
+  }
 }
