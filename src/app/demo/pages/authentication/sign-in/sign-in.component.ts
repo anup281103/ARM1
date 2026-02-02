@@ -1,8 +1,10 @@
 import { Component } from '@angular/core';
 import { Router } from '@angular/router';
 import { AuthService } from 'src/app/services/auth.service';
+import { UserService } from 'src/app/services/user-service';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { forkJoin } from 'rxjs';
 
 @Component({
   selector: 'app-sign-in',
@@ -18,8 +20,8 @@ export class SignInComponent {
 
   constructor(
     private authService: AuthService,
-    private router: Router
-    // private userService: UserService // Inject if you want to set state directly without relying solely on localstorage read in next component
+    private router: Router,
+    private userService: UserService
   ) {}
 
   onLogin() {
@@ -30,34 +32,50 @@ export class SignInComponent {
       next: (response: any) => {
         console.log('Login phase 1 successful, response:', response);
         
-        // Login success, now fetch full user details
-        this.authService.getLoggedInUser().subscribe({
-          next: (userResponse: any) => {
+        // Fetch both user details and roles in parallel
+        forkJoin({
+          user: this.authService.getLoggedInUser(),
+          roles: this.authService.getUserRoles()
+        }).subscribe({
+          next: ({ user: userResponse, roles: rolesResponse }) => {
             this.loading = false;
-            console.log('User details fetched successfully:', userResponse);
+            console.log('User details fetched:', userResponse);
+            console.log('User roles fetched:', rolesResponse);
             
-            // Frappe usually returns user object inside `message`
+            // Frappe usually returns data inside `message`
             const userData = userResponse.message || userResponse;
+            const userRoles = rolesResponse.message || [];
 
             if (userData) {
-              // Normalize the data if needed to match your UserModel interface
-              // Example: if backend returns 'full_name' but model expects 'FullName'
+              // Normalize and store user data
               const normalizedUser = {
                 ...userData,
                 FullName: userData.full_name || userData.FullName,
-                // Add other mappings as you discover them from the console log
               };
 
               localStorage.setItem('lstUserDetail', JSON.stringify(normalizedUser));
-              console.log('Saved COMPLETE user data to localStorage:', normalizedUser);
+              this.userService.setUser(normalizedUser);
+              console.log('Saved user data to localStorage and UserService:', normalizedUser);
             }
 
-            this.router.navigate(['/analytics']);
+            // Store roles in UserService
+            if (Array.isArray(userRoles)) {
+              this.userService.setRoles(userRoles);
+              console.log('Stored user roles:', userRoles);
+            }
+
+            // Navigate based on role
+            if (this.userService.isCollector()) {
+              // Redirect Collector Office users to Material Approval page
+              this.router.navigate(['/materialApproval']);
+            } else {
+              this.router.navigate(['/analytics']);
+            }
           },
-          error: (userErr) => {
-             console.error('Failed to fetch user details after login', userErr);
+          error: (err) => {
+             console.error('Failed to fetch user details/roles after login', err);
              this.loading = false;
-             // Still navigate, maybe we can survive with partial data or it will fail gracefully
+             // Still navigate to analytics as fallback
              this.router.navigate(['/analytics']);
           }
         });

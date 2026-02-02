@@ -29,10 +29,14 @@ export class DashAnalyticsComponent implements OnInit {
 
   // User Session
   user: any = null;
+  userRoles: string[] = [];
   serverTime: Date = new Date();
 
   // constructor
-  constructor(private authService: AuthService) {
+  constructor(
+    private authService: AuthService,
+    private userService: UserService
+  ) {
     this.chartOptions = {
       chart: {
         height: 205,
@@ -221,9 +225,32 @@ export class DashAnalyticsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadUserSession();
+    
+    // Subscribe to UserService for user and roles
+    this.userService.user$.subscribe(user => {
+      if (user) {
+        this.user = user;
+        console.log('DashAnalytics: User from UserService:', user);
+      }
+    });
+
+    this.userService.roles$.subscribe(roles => {
+      this.userRoles = roles;
+      console.log('DashAnalytics: Roles from UserService:', roles);
+    });
   }
 
   loadUserSession() {
+    // Try to get user from UserService first
+    const existingUser = this.userService.getUser();
+    if (existingUser) {
+      this.user = existingUser;
+      this.userRoles = this.userService.getRoles();
+      console.log('DashAnalytics: Using cached user and roles');
+      return;
+    }
+
+    // If not in UserService, fetch from API
     this.authService.getLoggedInUser().subscribe({
       next: (res) => {
         console.log('DashAnalytics: get_logged_user response:', res);
@@ -232,8 +259,21 @@ export class DashAnalyticsComponent implements OnInit {
           this.authService.getUserDetails(userId).subscribe({
             next: (userRes) => {
               this.user = userRes.data;
+              this.userService.setUser(this.user);
               this.serverTime = new Date();
               console.log('DashAnalytics: Loaded user from API:', this.user);
+              
+              // Also fetch roles if not already loaded
+              if (this.userRoles.length === 0) {
+                this.authService.getUserRoles().subscribe({
+                  next: (rolesRes) => {
+                    const roles = rolesRes.message || [];
+                    this.userService.setRoles(roles);
+                    this.userRoles = roles;
+                  },
+                  error: (err) => console.error('Failed to load roles', err)
+                });
+              }
             },
             error: (err) => {
                 console.error('DashAnalytics: Failed to load user details', err);

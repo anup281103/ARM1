@@ -1,7 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { environment } from 'src/environments/environment';
+import { environment } from 'src/environments/environment.prod';
+
 
 @Injectable({
   providedIn: 'root'
@@ -32,5 +33,9 @@ export class AuthService {
 
   getUserDetails(userId: string): Observable<any> {
     return this.http.get(`${this.baseUrl}/api/resource/User/${userId}`, { withCredentials: true });
+  }
+
+  getUserRoles(): Observable<any> {
+    return this.http.get(`${this.baseUrl}/api/method/my_roles`, { withCredentials: true });
   }
 }

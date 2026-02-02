@@ -1,0 +1,246 @@
+<div class="container-fluid ">
+
+  <!-- PAGE TITLE -->
+  <div class="mb-3">
+    <h3 class="fw-bold">Purchase Orders</h3>
+    <p class="text-muted mb-0">Orders created from approved requisitions.</p>
+  </div>
+
+  <!-- SUMMARY CARDS -->
+  <div class="row g-4 mb-4">
+
+  <!-- TOTAL PURCHASE -->
+  <div class="col-xl-4 col-md-6">
+    <div class="summary-card bg-blue">
+      <div class="card-content">
+        <div class="iconcircle">
+          <i class="feather icon-clipboard feather1"></i>
+        </div>
+
+        <div class="text">
+          <h2 class="text-white">19</h2>
+          <p>Total Purchase Orders</p>
+        </div>
+      </div>
+
+      <!-- background icon -->
+      <i class="feather icon-pie-chart bg-icon"></i>
+    </div>
+  </div>
+
+  <!-- TO BILL -->
+  <div class="col-xl-4 col-md-6">
+    <div class="summary-card bg-orange">
+      <div class="card-content">
+        <div class="iconcircle">
+          <i class="feather icon-file-text feather2"></i>
+        </div>
+
+        <div class="text">
+          <h2 class="text-white">15 <span class="text-black">to Bill</span></h2>
+          <p class="text-black">Marked as To Bill</p>
+        </div>
+      </div>
+
+      <i class="feather icon-credit-card bg-icon"></i>
+    </div>
+  </div>
+
+  <!-- COMPLETED -->
+  <div class="col-xl-4 col-md-6">
+    <div class="summary-card bg-green">
+      <div class="card-content">
+        <div class="iconcircle">
+          <i class="feather icon-check-circle feather3"></i>
+        </div>
+
+        <div class="text">
+         <h2 class="text-white">15 <span class="text-black">Completed</span></h2>
+          <p class="text-black">Closed & billed</p>
+        </div>
+      </div>
+
+      <i class="feather icon-user-check bg-icon"></i>
+    </div>
+  </div>
+
+</div>
+
+
+  <!-- STATUS + CHART -->
+  <div class="row g-4 mb-4">
+
+    <!-- BY STATUS -->
+    <div class="col-lg-6">
+      <div class="card h-100 " >
+        <div class="card-body">
+          <h6 class="text-uppercase fw-semibold text-muted mb-3">By Status</h6>
+
+          <div class="mb-3">
+            <div class="d-flex justify-content-between">
+              <small>Draft</small><small>1</small>
+            </div>
+            <div class="progress">
+              <div class="progress-bar bg-primary" style="width: 10%"></div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="d-flex justify-content-between">
+              <small>Completed</small><small>4</small>
+            </div>
+            <div class="progress">
+              <div class="progress-bar bg-success" style="width: 40%"></div>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <div class="d-flex justify-content-between">
+              <small>To Bill</small><small>11</small>
+            </div>
+            <div class="progress">
+              <div class="progress-bar bg-warning" style="width: 70%"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="d-flex justify-content-between">
+              <small>To Receive & Bill</small><small>3</small>
+            </div>
+            <div class="progress">
+              <div class="progress-bar bg-info" style="width: 30%"></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- MONTHLY TREND -->
+    <div class="col-lg-6">
+      <div class="card h-100 " >
+        <div class="card-body">
+          <h6 class="text-uppercase fw-semibold text-muted mb-3">Monthly Trend</h6>
+
+          <!-- <apx-chart
+            [chart]="monthlyChart.chart!"
+            [series]="monthlyChart.series!"
+            [xaxis]="monthlyChart.xaxis!"
+            [dataLabels]="monthlyChart.dataLabels!"
+            [colors]="monthlyChart.colors!"
+            [plotOptions]="monthlyChart.plotOptions!">
+            </apx-chart> -->
+
+
+             <apx-chart
+            [series]="chartOptions_1.series!"
+            [chart]="chartOptions_1.chart!"
+            [stroke]="chartOptions_1.stroke!"
+            [dataLabels]="chartOptions_1.dataLabels!"
+            [labels]="chartOptions_1.labels!"
+            [legend]="chartOptions_1.legend!"
+            [colors]="chartOptions_1.colors!"
+            [fill]="chartOptions_1.fill!"
+            [grid]="chartOptions_1.grid!"
+            [plotOptions]="chartOptions_1.plotOptions!"
+            [tooltip]="chartOptions_1.tooltip!"
+          ></apx-chart>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TABLE -->
+  <div class="card ">
+  <div class="card-body">
+
+    <div class="d-flex justify-content-between mb-3">
+      <h6 class="text-uppercase fw-semibold text-muted mb-3" routerLink="/purchaseOrdersDetails">Purchase Orders</h6>
+
+      <select class="form-select form-select-sm w-auto"
+              [(ngModel)]="pageSize"
+              (change)="currentPage = 1">
+        <option [value]="5">5</option>
+        <option [value]="10">10</option>
+        <option [value]="20">20</option>
+      </select>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table table-hover table-bordered align-middle">
+        <thead class="table-light">
+          <tr>
+            <th (click)="changeSort('poNo')" class="sortable">
+              PO Number
+              <span *ngIf="sortColumn === 'poNo'">
+                {{ sortDirection === 'asc' ? '▲' : '▼' }}
+              </span>
+            </th>
+
+            <th (click)="changeSort('status')" class="sortable">Status</th>
+            <th (click)="changeSort('supplier')" class="sortable">Supplier</th>
+            <th (click)="changeSort('date')" class="sortable">Date</th>
+            <th (click)="changeSort('total')" class="sortable">Total</th>
+            <th>Company</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let row of paginatedOrders">
+            <td class="text-primary fw-semibold">
+                
+                 <a
+    class="text-red text-decoration-none"
+     routerLink="/purchaseOrdersDetails"
+  >
+    {{ row.poNo }}
+  </a>
+                </td>
+            <td>
+              <span class="badge"
+                [ngClass]="{
+                  'bg-success': row.status === 'Completed',
+                  'bg-warning text-dark': row.status === 'To Bill'
+                }">
+                {{ row.status }}
+              </span>
+            </td>
+            <td>{{ row.supplier }}</td>
+            <td>{{ row.date }}</td>
+            <td>{{ row.total | number }}</td>
+            <td>{{ row.company }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- pagination -->
+    <nav>
+      <ul class="pagination justify-content-end mb-0">
+        <li class="page-item"
+            [class.disabled]="currentPage === 1">
+          <a class="page-link" (click)="changePage(currentPage - 1)">‹</a>
+        </li>
+
+        <li class="page-item"
+            *ngFor="let p of [].constructor(totalPages); let i = index"
+            [class.active]="currentPage === i + 1">
+          <a class="page-link" (click)="changePage(i + 1)">
+            {{ i + 1 }}
+          </a>
+        </li>
+
+        <li class="page-item"
+            [class.disabled]="currentPage === totalPages">
+          <a class="page-link" (click)="changePage(currentPage + 1)">›</a>
+        </li>
+      </ul>
+    </nav>
+
+  </div>
+</div>
+
+
+</div>

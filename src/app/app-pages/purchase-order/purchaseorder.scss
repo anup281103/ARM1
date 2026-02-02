@@ -1,0 +1,107 @@
+.stat-card {
+  border-radius: 14px;
+  min-height: 100px;
+}
+
+.icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+
+.progress {
+  height: 8px;
+  border-radius: 10px;
+}
+.iconcircle{width: 75px;height: 75px;border-radius: 100px;display: flex; align-items: center;background:#fdf3e8;justify-content: center;}
+
+.summary-card {
+  position: relative;
+  height: 120px;
+  border-radius: 16px;
+  padding: 24px;
+  color: #fff;
+  overflow: hidden;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+}
+
+.summary-card .card-content {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  position: relative;
+  z-index: 2;
+}
+
+.summary-card .icon-circle {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+}
+
+.summary-card h2 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.summary-card p {
+  margin: 0;
+  opacity: 0.9;
+  font-size: 14px;
+}
+
+/* big faded background icon */
+.summary-card .bg-icon {
+  position: absolute;
+  right: -10px;
+  bottom: -10px;
+  font-size: 110px;
+  opacity: 0.12;
+  z-index: 1;
+}
+
+/* gradients */
+.bg-blue {
+  background: linear-gradient(135deg, #2955d2, #5780fa);
+}
+
+.bg-orange {
+  background: linear-gradient(135deg, #feaf39, #fed864);
+}
+
+.bg-green {
+  background: linear-gradient(135deg, #41afa1, #a4dfcf);
+}
+
+
+.feather1{color: #2955d2;font-size: 34px;}
+.feather2{color: #feaf39;font-size: 34px;}
+.feather3{color: #41afa1;font-size: 34px;}
+.card{border-radius: 16px;}
+
+.sortable {
+  cursor: pointer;
+}
+
+.sortable:hover {
+  text-decoration: underline;
+}
+
+.pagination .page-link {
+  cursor: pointer;
+}
+h3{
+   font-size: 1.4rem;
+   margin-bottom: 0; 
+}

@@ -38,6 +38,31 @@ const routes: Routes = [
         component: MaterialRequest
       },
 
+      {
+        path: 'materialApproval',
+        loadComponent: () => import('./app-pages/material-approval/material-approval.component').then((c) => c.MaterialApprovalComponent)
+      },
+
+      {
+        path: 'my-material-requests',
+        loadComponent: () => import('./app-pages/my-material-requests/my-material-requests.component').then((c) => c.MyMaterialRequestsComponent)
+      },
+
+      {
+        path: 'district-material-requests',
+        loadComponent: () => import('./app-pages/district-material-requests/district-material-requests.component').then((c) => c.DistrictMaterialRequestsComponent)
+      },
+
+      {
+        path: 'purchase-order',
+        loadComponent: () => import('./app-pages/purchase-order/purchaseorder').then((c) => c.Purchaseorder)
+      },
+
+      {
+        path: 'purchase-order-details',
+        loadComponent: () => import('./app-pages/purchase-order-details/purchase-orders-details').then((c) => c.PurchaseOrdersDetails)
+      },
+
       // {
       //   path: 'chart',
       //   loadComponent: () => import('./demo/chart-maps/core-apex.component').then((c) => c.CoreApexComponent)

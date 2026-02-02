@@ -28,10 +28,18 @@
             
             <h5 class="mb-2">Roles</h5>
             <div class="d-flex flex-wrap gap-2">
-              <ng-container *ngIf="user.roles && user.roles.length > 0; else noPerms">
-                <span *ngFor="let role of user.roles" class="badge bg-light-primary text-primary border border-primary">
-                  {{ role.role || role }} 
-                </span>
+              <ng-container *ngIf="(user.roles && user.roles.length > 0) || userRoles.length > 0; else noPerms">
+                <!-- Show roles from user.roles OR userRoles -->
+                <ng-container *ngIf="user.roles && user.roles.length > 0">
+                  <span *ngFor="let role of user.roles" class="badge bg-light-primary text-primary border border-primary">
+                    {{ role.role || role }} 
+                  </span>
+                </ng-container>
+                <ng-container *ngIf="userRoles.length > 0 && (!user.roles || user.roles.length === 0)">
+                  <span *ngFor="let role of userRoles" class="badge bg-light-primary text-primary border border-primary">
+                    {{ role }} 
+                  </span>
+                </ng-container>
               </ng-container>
               <ng-template #noPerms>
                 <span class="text-muted">No specific roles assigned.</span>

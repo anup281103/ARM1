@@ -1,6 +1,6 @@
 {
   "/api": {
-    "target": "http://10.120.9.114:8000",
+    "target": "http://10.120.9.75:8000",
     "secure": false,
     "changeOrigin": true,
     "cookieDomainRewrite": {
@@ -10,7 +10,7 @@
       "^/api": "/api"
     },
     "headers": {
-      "Origin": "http://10.120.9.114:8000"
+      "Origin": "http://10.120.9.75:8000"
     },
     "logLevel": "debug"
   }

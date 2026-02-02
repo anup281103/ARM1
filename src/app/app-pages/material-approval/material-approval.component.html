@@ -1,0 +1,137 @@
+<div class="page-header">
+  <div class="page-block">
+    <h5>Material Request Approval</h5>
+    @if (userDistrict) {
+      <p class="text-muted">Review and approve/reject material requests from <strong>{{ userDistrict }}</strong> district</p>
+    } @else {
+      <p class="text-muted">Review and approve/reject material requests</p>
+    }
+  </div>
+</div>
+
+<!-- User Session Card -->
+@if (user) {
+  <div class="row mb-4">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex align-items-center">
+            <div class="flex-shrink-0">
+              <img [src]="user.user_image || 'assets/images/user/avtar-icon.png'" 
+                   class="img-radius wid-60" 
+                   alt="User Avatar" 
+                   onerror="this.src='assets/images/user/avtar-icon.png'">
+            </div>
+            <div class="flex-grow-1 ms-3">
+              <h6 class="mb-1">{{ user.full_name || 'Collector' }}</h6>
+              <p class="text-muted mb-0">{{ user.email }}</p>
+              @if (userDistrict) {
+                <small class="text-muted d-block">
+                  <i class="feather icon-map-pin"></i> District: <strong>{{ userDistrict }}</strong>
+                </small>
+              }
+              <small class="text-muted">
+                Roles: 
+                <ng-container *ngFor="let role of user.roles; let last = last">
+                  <span class="badge bg-primary">{{ role.role }}</span>{{ !last ? ' ' : '' }}
+                </ng-container>
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Material Requests Table -->
+<div class="row">
+  <div class="col-md-12">
+    <div class="card">
+      <div class="card-header">
+        <h5 class="mb-0">
+          @if (userDistrict) {
+            Material Requests from {{ userDistrict }}
+          } @else {
+            Pending Material Requests
+          }
+        </h5>
+      </div>
+      <div class="card-body">
+        @if (loading) {
+          <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading material requests...</p>
+          </div>
+        } @else if (materialRequests.length === 0) {
+          <div class="text-center py-5">
+            <i class="feather icon-inbox display-4 text-muted mb-3"></i>
+            <h5 class="text-muted">No pending material requests</h5>
+            <p class="text-muted">There are no material requests waiting for approval.</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead>
+                <tr>
+                  <th>Request ID</th>
+                  <th>Requester</th>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Company</th>
+                  <th>District</th>
+                  <th>Items</th>
+                  <th>Status</th>
+                  <th class="text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let request of materialRequests">
+                  <td>
+                    <strong>{{ request.name }}</strong>
+                  </td>
+                  <td>{{ request.owner }}</td>
+                  <td>{{ request.transaction_date | date:'MMM d, yyyy' }}</td>
+                  <td>{{ request.material_request_type }}</td>
+                  <td>{{ request.company }}</td>
+                  <td>{{ request.custom_district || '-' }}</td>
+                  <td>
+                    <span class="badge bg-info">{{ getItemsSummary(request.items) }}</span>
+                  </td>
+                  <td>
+                    <span class="badge" [ngClass]="getStatusBadgeClass(request.status)">
+                      {{ request.status }}
+                    </span>
+                  </td>
+                  <td class="text-center">
+                    <div class="btn-group btn-group-sm" role="group">
+                      <button 
+                        class="btn btn-success" 
+                        (click)="approveMaterialRequest(request)"
+                        [disabled]="request.status !== 'Submitted' && request.status !== 'Pending'"
+                        title="Approve Request">
+                        <i class="feather icon-check"></i> Approve
+                      </button>
+                      <button 
+                        class="btn btn-danger" 
+                        (click)="rejectMaterialRequest(request)"
+                        [disabled]="request.status !== 'Submitted' && request.status !== 'Pending'"
+                        title="Reject Request">
+                        <i class="feather icon-x"></i> Reject
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Optional: Request Details Section (can be expanded) -->
+<!-- This could be a collapsible section or modal to show full request details -->

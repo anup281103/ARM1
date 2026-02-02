@@ -1,12 +1,14 @@
 // angular import
 import { Component, OnInit, inject, output } from '@angular/core';
 import { Location, LocationStrategy } from '@angular/common';
+import { Router } from '@angular/router';
 
 // project import
-import { environment } from 'src/environments/environment';
+import { environment } from     'src/environments/environment.prod';
 import { NavigationItem, NavigationItems } from '../navigation';
 import { SharedModule } from 'src/app/theme/shared/shared.module';
 import { NavGroupComponent } from './nav-group/nav-group.component';
+import { UserService } from 'src/app/services/user-service';
 
 @Component({
   selector: 'app-nav-content',
@@ -17,6 +19,8 @@ import { NavGroupComponent } from './nav-group/nav-group.component';
 export class NavContentComponent implements OnInit {
   private location = inject(Location);
   private locationStrategy = inject(LocationStrategy);
+  private userService = inject(UserService);
+  private router = inject(Router);
 
   // version
   title = 'Demo application for version numbering';
@@ -47,6 +51,96 @@ export class NavContentComponent implements OnInit {
         (document.querySelector('#nav-ps-gradient-able') as HTMLElement).style.height = '100%';
       }, 500);
     }
+
+    // Subscribe to user authentication and roles
+    this.userService.user$.subscribe(() => {
+      this.updateNavigation();
+    });
+
+    this.userService.roles$.subscribe(() => {
+      this.updateNavigation();
+    });
+  }
+
+  updateNavigation() {
+    const isAuthenticated = this.userService.getUser() !== null || localStorage.getItem('lstUserDetail') !== null;
+    const userRoles = this.userService.getRoles();
+    
+    console.log('🔍 Navigation Update - User Roles:', userRoles);
+    console.log('🔍 Navigation Update - Is Authenticated:', isAuthenticated);
+
+    // Deep clone navigation items to avoid modifying the original
+    this.navigation = JSON.parse(JSON.stringify(NavigationItems));
+
+    // Filter navigation items based on roles
+    this.navigation = this.navigation.map(group => {
+      if (group.children) {
+        const originalLength = group.children.length;
+        group.children = group.children.filter(item => {
+          // If item has roles defined, check if user has at least one of them
+          if (item.roles && item.roles.length > 0) {
+            const hasAccess = item.roles.some(role => userRoles.includes(role));
+            console.log(`🔍 Nav Item: ${item.title} | Required Roles:`, item.roles, '| Has Access:', hasAccess);
+            return hasAccess;
+          }
+          return true; // Show items without role restrictions
+        });
+        console.log(`🔍 Group: ${group.title} | Items: ${originalLength} -> ${group.children.length}`);
+      }
+      return group;
+    });
+
+    // Update Sign In/Log Out button
+    const authGroup = this.navigation.find(g => g.id === 'Authentication');
+    if (authGroup && authGroup.children) {
+      const signInIndex = authGroup.children.findIndex(item => item.id === 'signin');
+      
+      if (signInIndex !== -1) {
+        if (isAuthenticated) {
+          // Change to Log Out
+          authGroup.children[signInIndex] = {
+            id: 'signout',
+            title: 'Log Out',
+            type: 'item',
+            url: 'javascript:void(0)', // Prevent navigation
+            icon: 'feather icon-log-out',
+            breadcrumbs: false
+          };
+        } else {
+          // Keep as Sign In (restore original)
+          authGroup.children[signInIndex] = {
+            id: 'signin',
+            title: 'Sign in',
+            type: 'item',
+            url: '/login',
+            icon: 'feather icon-log-in',
+            target: true,
+            breadcrumbs: false
+          };
+        }
+      }
+    }
+  }
+
+  // Handle logout when logout menu item is clicked
+  handleNavItemClick(item: NavigationItem) {
+    if (item.id === 'signout') {
+      this.logout();
+    }
+  }
+
+  logout() {
+    this.userService.logout().subscribe({
+      next: () => {
+        this.userService.clearUser();
+        this.router.navigate(['/login']);
+      },
+      error: () => {
+        // Force logout even if API fails
+        this.userService.clearUser();
+        this.router.navigate(['/login']);
+      }
+    });
   }
 
   fireLeave() {

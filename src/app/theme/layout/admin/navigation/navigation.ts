@@ -13,6 +13,7 @@ export interface NavigationItem {
   external?: boolean;
   target?: boolean;
   breadcrumbs?: boolean;
+  roles?: string[]; // Array of role names that can access this item
   badge?: {
     title?: string;
     type?: string;
@@ -135,17 +136,68 @@ export const NavigationItems: NavigationItem[] =
         icon: 'feather icon-log-in',
         target: true,
         breadcrumbs: false
-      },
+      }
+    ]
+  },
+  {
+    id: 'dealer-operations',
+    title: 'Dealer Operations',
+    type: 'group',
+    icon: 'icon-group',
+    children: [
       {
         id: 'request',
         title: 'Material Request',
         type: 'item',
         url: '/materialRequest',
         icon: 'feather icon-file-text',
-        // target: true,
+        roles: ['Dealer', 'Purchase User'],
         breadcrumbs: false
       },
-
+      {
+        id: 'my-requests',
+        title: 'My Requests',
+        type: 'item',
+        url: '/my-material-requests',
+        icon: 'feather icon-list',
+        roles: ['Dealer', 'Purchase User'],
+        breadcrumbs: false
+      },
+      {
+        id: 'purchase-order',
+        title: 'Purchase Orders',
+        type: 'item',
+        url: '/purchase-order',
+        icon: 'feather icon-shopping-cart',
+        roles: ['Dealer', 'Purchase User'],
+        breadcrumbs: false
+      },
+      {
+        id: 'purchase-order-details',
+        title: 'Purchase Order Details',
+        type: 'item',
+        url: '/purchase-order-details',
+        icon: 'feather icon-file',
+        roles: ['Dealer', 'Purchase User'],
+        breadcrumbs: false
+      }
+    ]
+  },
+  {
+    id: 'collector-operations',
+    title: 'Collector Operations',
+    type: 'group',
+    icon: 'icon-group',
+    children: [
+      {
+        id: 'material-requests',
+        title: 'Material Requests',
+        type: 'item',
+        url: '/materialApproval',
+        icon: 'feather icon-check-circle',
+        roles: ['Collector Office'],
+        breadcrumbs: false
+      }
     ]
   },
   // {
