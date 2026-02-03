@@ -1,8 +1,32 @@
 <div class="page-header">
  <div class="page-block">
-   <h5>New Material Request</h5>
+   <h5>{{ viewMode ? 'View Material Request' : 'New Material Request' }}</h5>
   </div>
   </div>
+
+<!-- Status Badge in View Mode -->
+@if (viewMode && requestData) {
+  <div class="row mb-3">
+    <div class="col-md-12">
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <h5 class="mb-1">{{ requestData.name }}</h5>
+              <p class="text-muted mb-0">Viewing Material Request Details</p>
+            </div>
+            <div>
+              <span class="badge {{ getStatusBadgeClass(requestData.workflow_state || requestData.status) }} fs-6">
+                {{ requestData.workflow_state || requestData.status }}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
 <div class="row">
     <div class="col-md-12">
       <div class="dashboard-container">
@@ -26,36 +50,6 @@
       <div class="rowcal">
         <span class="label">User ID</span>
         <span class="value truncate">{{ user?.name || 'N/A' }}</span>
-      </div>
-
-      <div class="rowcal">
-        <span class="label">Email</span>
-        <span class="value truncate">{{ user?.email || '-' }}</span>
-      </div>
-
-      <div class="rowcal">
-        <span class="label">Mobile</span>
-        <span class="value">{{ user?.mobile_no || '-' }}</span>
-      </div>
-
-       <div class="rowcal">
-        <span class="label">Department</span>
-        <span class="value">{{ user?.department || '-' }}</span>
-      </div>
-
-      <div class="rowcal">
-        <span class="label">Designation</span>
-        <span class="value">{{ user?.designation || '-' }}</span>
-      </div>
-
-      <div class="rowcal">
-        <span class="label">Language</span>
-        <span class="value">{{ user?.language || '-' }}</span>
-      </div>
-
-      <div class="rowcal">
-        <span class="label">Last Login</span>
-        <span class="value">{{ user?.last_login | date:'short' }}</span>
       </div>
 
       <div class="rowcal">
@@ -103,8 +97,8 @@
       </div>
 
       <div class="col-md-6">
-        <label class="form-label text-uppercase fw-semibold">Transaction Date</label>
-        <input type="date" class="form-control" [(ngModel)]="requestDate">
+          <label class="form-label text-uppercase  fw-semibold">Transaction Date <span class="text-danger">*</span></label>
+        <input type="date" class="form-control" [(ngModel)]="requestDate" [readonly]="isReadOnly">
       </div>
     </div>
 
@@ -112,7 +106,7 @@
     <div class="row g-3 mb-3">
       <div class="col-md-6">
         <label class="form-label text-uppercase fw-semibold">Purpose</label>
-        <select class="form-select" [(ngModel)]="purpose">
+        <select class="form-select" [(ngModel)]="purpose" [disabled]="isReadOnly">
           <option value="Purchase">Purchase</option>
 
         </select>
@@ -120,15 +114,15 @@
 
       <div class="col-md-6">
         <label class="form-label text-uppercase fw-semibold">Required By</label>
-        <input type="date" class="form-control" [(ngModel)]="requiredByDate">
+        <input type="date" class="form-control" [(ngModel)]="requiredByDate" [readonly]="isReadOnly">
       </div>
     </div>
 
     <!-- ROW 3 -->
     <div class="row g-3 mb-4">
       <div class="col-md-6">
-        <label class="form-label text-uppercase fw-semibold">Company</label>
-        <select class="form-select" [(ngModel)]="company">
+        <label class="form-label text-uppercase fw-semibold">Company <span class="text-danger">*</span></label>
+        <select class="form-select" [(ngModel)]="company" [disabled]="isReadOnly">
           <option *ngFor="let comp of companyList" [value]="comp.name">{{ comp.company_name }}</option>
         </select>
       </div>
@@ -144,8 +138,8 @@
     <!-- ROW 4 - District -->
     <div class="row g-3 mb-4">
       <div class="col-md-6">
-        <label class="form-label text-uppercase fw-semibold">District</label>
-        <select class="form-select" [(ngModel)]="district">
+        <label class="form-label text-uppercase fw-semibold">District <span class="text-danger">*</span></label>
+        <select class="form-select" [(ngModel)]="district" [disabled]="isReadOnly">
           <option *ngFor="let dist of districtList" [value]="dist.name">{{ dist.district_name || dist.name }}</option>
         </select>
       </div>
@@ -167,21 +161,21 @@
 
       <div class="row g-3">
         <div class="col-md-4">
-          <label class="form-label ">Item Code</label>
-          <input type="text" class="form-control" list="itemOptions" [(ngModel)]="itemCode" placeholder="Type or select item">
+          <label class="form-label ">Item Code <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" list="itemOptions" [(ngModel)]="itemCode" placeholder="Type or select item" [readonly]="isReadOnly">
           <datalist id="itemOptions">
             <option *ngFor="let item of itemsList" [value]="item.item_code">{{ item.item_name }}</option>
           </datalist>
         </div>
 
         <div class="col-md-4">
-          <label class="form-label ">Quantity</label>
-          <input type="number" class="form-control" [(ngModel)]="quantity" min="1">
+          <label class="form-label ">Quantity <span class="text-danger">*</span></label>
+          <input type="number" class="form-control" [(ngModel)]="quantity" min="1" [readonly]="isReadOnly">
         </div>
 
         <div class="col-md-4">
-          <label class="form-label ">Warehouse</label>
-          <select class="form-select" [(ngModel)]="warehouse">
+          <label class="form-label ">Warehouse <span class="text-danger">*</span></label>
+          <select class="form-select" [(ngModel)]="warehouse" [disabled]="isReadOnly">
              <option *ngFor="let wh of warehouseList" [value]="wh.name">{{ wh.warehouse_name }} ({{ wh.name }})</option>
           </select>
         </div>
@@ -198,17 +192,68 @@
 
         <div class="col-md-4">
           <label class="form-label ">Description</label>
-          <input type="text" class="form-control" placeholder="Optional" [(ngModel)]="description">
+          <input type="text" class="form-control" placeholder="Optional" [(ngModel)]="description" [readonly]="isReadOnly">
         </div>
       </div>
 
     </div>
 
-    <!-- SUBMIT -->
+    <!-- SUBMIT / BACK BUTTON -->
     <div class="text-end">
-      <button class="btn btn-primary px-4 py-2 rounded-pill" (click)="submit()">
-        Submit Request
-      </button>
+      @if (!viewMode) {
+        <!-- Create Mode: Submit Request Button -->
+        <button 
+          class="btn btn-primary px-4 py-2 rounded-pill" 
+          (click)="submit()" 
+          [disabled]="!isFormValid() || submitting">
+          <span *ngIf="submitting" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+          {{ submitting ? 'Submitting...' : 'Submit Request' }}
+        </button>
+      } @else {
+        <!-- View Mode: Show different buttons based on state -->
+        <div class="d-flex gap-2 justify-content-end">
+          <!-- Submit to Collector (Draft only, owner only) -->
+          @if (canSubmitToCollector) {
+            <button 
+              class="btn btn-success px-4 py-2 rounded-pill" 
+              (click)="submitToCollector()"
+              [disabled]="submittingWorkflow">
+              <span *ngIf="submittingWorkflow" class="spinner-border spinner-border-sm me-2"></span>
+              <i class="feather icon-send"></i> {{ submittingWorkflow ? 'Submitting...' : 'Submit to Collector' }}
+            </button>
+          }
+          
+          <!-- Create Purchase Order (Approved only, owner only) -->
+          @if (canCreatePurchaseOrder) {
+            <button 
+              class="btn btn-primary px-4 py-2 rounded-pill" 
+              (click)="createPurchaseOrder()"
+              [disabled]="creatingPurchaseOrder">
+              <span *ngIf="creatingPurchaseOrder" class="spinner-border spinner-border-sm me-2"></span>
+              <i class="feather icon-shopping-cart"></i> {{ creatingPurchaseOrder ? 'Creating...' : 'Create Purchase Order' }}
+            </button>
+          }
+          
+          <!-- Back to List -->
+          <button class="btn btn-secondary px-4 py-2 rounded-pill" (click)='goBack()'>
+            <i class="feather icon-arrow-left"></i> Back to List
+          </button>
+          
+          <!-- Collector Actions: Approve/Reject -->
+          @if (canApproveOrReject) {
+            <button 
+              class="btn btn-success px-4 py-2 rounded-pill" 
+              (click)="approveMaterialRequest()">
+              <i class="feather icon-check"></i> Approve
+            </button>
+            <button 
+              class="btn btn-danger px-4 py-2 rounded-pill" 
+              (click)="rejectMaterialRequest()">
+              <i class="feather icon-x"></i> Reject
+            </button>
+          }
+        </div>
+      }
     </div>
 
   </div>

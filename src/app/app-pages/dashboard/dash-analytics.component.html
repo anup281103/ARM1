@@ -4,56 +4,7 @@
   </div>
   </div>
 
-  <div class="row" *ngIf="user">
-    <div class="col-md-12">
-      <app-card cardTitle="User Profile Info" [options]="false">
-        <div class="row align-items-center">
-          <div class="col-md-2 text-center">
-            <img [src]="user.user_image || 'assets/images/user/avatar-2.jpg'" alt="User-Profile-Image" class="img-radius wid-100" style="object-fit: cover; height: 100px;">
-          </div>
-          <div class="col-md-10">
-            <h4 class="mb-1">{{ user.full_name || user.FullName || 'Guest' }}</h4>
-            <p class="mb-1 text-muted">{{ user.designation || user.Designation || 'No Designation' }}</p>
-            
-            <div class="d-flex flex-wrap gap-4 mt-2 mb-2">
-                <div><strong>Email:</strong> {{ user.email || user.Email }}</div>
-                <div><strong>User ID:</strong> {{ user.name || user.UserName }}</div>
-                <div><strong>Mobile:</strong> {{ user.mobile_no || 'N/A' }}</div>
-                <div><strong>Language:</strong> {{ user.language || 'en' }}</div>
-            </div>
-
-            <p class="mb-1" *ngIf="user.department"><strong>Department:</strong> {{ user.department }}</p>
-
-            <hr>
-            
-            <h5 class="mb-2">Roles</h5>
-            <div class="d-flex flex-wrap gap-2">
-              <ng-container *ngIf="(user.roles && user.roles.length > 0) || userRoles.length > 0; else noPerms">
-                <!-- Show roles from user.roles OR userRoles -->
-                <ng-container *ngIf="user.roles && user.roles.length > 0">
-                  <span *ngFor="let role of user.roles" class="badge bg-light-primary text-primary border border-primary">
-                    {{ role.role || role }} 
-                  </span>
-                </ng-container>
-                <ng-container *ngIf="userRoles.length > 0 && (!user.roles || user.roles.length === 0)">
-                  <span *ngFor="let role of userRoles" class="badge bg-light-primary text-primary border border-primary">
-                    {{ role }} 
-                  </span>
-                </ng-container>
-              </ng-container>
-              <ng-template #noPerms>
-                <span class="text-muted">No specific roles assigned.</span>
-              </ng-template>
-            </div>
-            
-            <div class="mt-2 text-muted small">
-                Last Login: {{ user.last_login | date:'medium' }}
-            </div>
-          </div>
-        </div>
-      </app-card>
-    </div>
-  </div>
+  
 <div class="bottomnote col-xl-12">
   <div class="d-flex align-items-center alert alert-warning notice-box" role="alert" >
     <div class="avatar-sm rounded p-1 me-2">

@@ -53,9 +53,18 @@
               All Material Requests
             }
           </h5>
-          <button class="btn btn-sm btn-outline-primary" (click)="refreshList()">
-            <i class="feather icon-refresh-cw"></i> Refresh
-          </button>
+          <div class="d-flex gap-2 align-items-center">
+            <select class="form-select form-select-sm" style="width: auto;"
+                    [(ngModel)]="pageSize"
+                    (change)="onPageSizeChange()">
+              <option [value]="5">5 per page</option>
+              <option [value]="10">10 per page</option>
+              <option [value]="20">20 per page</option>
+            </select>
+            <button class="btn btn-sm btn-outline-primary" (click)="refreshList()">
+              <i class="feather icon-refresh-cw"></i> Refresh
+            </button>
+          </div>
         </div>
       </div>
       <div class="card-body">
@@ -81,21 +90,41 @@
             <table class="table table-hover">
               <thead>
                 <tr>
-                  <th>Request ID</th>
-                  <th>Requester</th>
-                  <th>Date</th>
+                  <th (click)="changeSort('name')" style="cursor: pointer;">
+                    Request ID
+                    <span *ngIf="sortColumn === 'name'">
+                      {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                    </span>
+                  </th>
+                  <th (click)="changeSort('owner')" style="cursor: pointer;">
+                    Requester
+                    <span *ngIf="sortColumn === 'owner'">
+                      {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                    </span>
+                  </th>
+                  <th (click)="changeSort('transaction_date')" style="cursor: pointer;">
+                    Date
+                    <span *ngIf="sortColumn === 'transaction_date'">
+                      {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                    </span>
+                  </th>
                   <th>Type</th>
                   <th>Company</th>
                   <th>District</th>
                   <th>Items</th>
-                  <th>Status</th>
+                  <th (click)="changeSort('status')" style="cursor: pointer;">
+                    Status
+                    <span *ngIf="sortColumn === 'status'">
+                      {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                    </span>
+                  </th>
                   <th class="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <tr *ngFor="let request of materialRequests">
                   <td>
-                    <strong>{{ request.name }}</strong>
+                    <strong class="text-primary" style="cursor: pointer;" (click)="viewRequestInForm(request)">{{ request.name }}</strong>
                   </td>
                   <td>{{ request.owner }}</td>
                   <td>{{ request.transaction_date | date:'MMM d, yyyy' }}</td>
@@ -108,25 +137,14 @@
                     <span class="badge bg-secondary">{{ getItemsSummary(request.items) }}</span>
                   </td>
                   <td>
-                    <span class="badge" [ngClass]="getStatusBadgeClass(request.status)">
-                      {{ request.status }}
+                    <span class="badge" [ngClass]="getStatusBadgeClass(getDisplayStatus(request))">
+                      {{ getDisplayStatus(request) }}
                     </span>
                   </td>
                   <td class="text-center">
                     <div class="btn-group btn-group-sm" role="group">
-                      <button 
-                        class="btn btn-success" 
-                        (click)="approveMaterialRequest(request)"
-                        [disabled]="request.status !== 'Submitted' && request.status !== 'Pending'"
-                        title="Approve Request">
-                        <i class="feather icon-check"></i> Approve
-                      </button>
-                      <button 
-                        class="btn btn-danger" 
-                        (click)="rejectMaterialRequest(request)"
-                        [disabled]="request.status !== 'Submitted' && request.status !== 'Pending'"
-                        title="Reject Request">
-                        <i class="feather icon-x"></i> Reject
+                      <button class="btn btn-outline-info" (click)="viewRequestInForm(request)" title="View Details">
+                        <i class="feather icon-eye"></i> View
                       </button>
                     </div>
                   </td>
@@ -134,6 +152,27 @@
               </tbody>
             </table>
           </div>
+
+          <!-- Pagination Controls -->
+          <nav *ngIf="totalRecords > 0" class="mt-3">
+            <ul class="pagination justify-content-end mb-0">
+              <li class="page-item" [class.disabled]="currentPage === 1">
+                <a class="page-link" (click)="changePage(currentPage - 1)" style="cursor: pointer;">‹</a>
+              </li>
+
+              <li class="page-item"
+                  *ngFor="let p of [].constructor(totalPages); let i = index"
+                  [class.active]="currentPage === i + 1">
+                <a class="page-link" (click)="changePage(i + 1)" style="cursor: pointer;">
+                  {{ i + 1 }}
+                </a>
+              </li>
+
+              <li class="page-item" [class.disabled]="currentPage === totalPages">
+                <a class="page-link" (click)="changePage(currentPage + 1)" style="cursor: pointer;">›</a>
+              </li>
+            </ul>
+          </nav>
         }
       </div>
     </div>

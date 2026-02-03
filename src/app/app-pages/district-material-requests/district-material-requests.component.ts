@@ -22,6 +22,7 @@ interface MaterialRequestData {
   company: string;
   owner: string;
   status: string;
+  workflow_state?: string;
   items: MaterialRequestItem[];
   custom_district?: string;
 }
@@ -38,6 +39,15 @@ export class DistrictMaterialRequestsComponent implements OnInit {
   loading = false;
   user: any = null;
   userDistrict: string = '';
+
+  // Pagination
+  pageSize = 10;
+  currentPage = 1;
+  totalRecords = 0;
+
+  // Sorting
+  sortColumn: string = 'name';
+  sortDirection: 'asc' | 'desc' = 'desc';
 
   constructor(
     private materialService: MaterialService,
@@ -106,6 +116,18 @@ export class DistrictMaterialRequestsComponent implements OnInit {
           this.materialRequests = allRequests;
         }
         
+        // Apply sorting
+        const sortedRequests = this.sortData(allRequests);
+        
+        // Calculate total
+        this.totalRecords = sortedRequests.length;
+        
+        // Apply pagination
+        const limitStart = (this.currentPage - 1) * this.pageSize;
+        const start = limitStart;
+        const end = start + this.pageSize;
+        this.materialRequests = sortedRequests.slice(start, end);
+        
         this.loading = false;
         console.log('District material requests loaded:', this.materialRequests);
       },
@@ -137,23 +159,43 @@ export class DistrictMaterialRequestsComponent implements OnInit {
           next: (response) => {
             console.log('Material request approved:', response);
             
-            // Immediately update the local status for instant feedback
-            const reqIndex = this.materialRequests.findIndex(r => r.name === request.name);
-            if (reqIndex !== -1) {
-              this.materialRequests[reqIndex].status = 'Submitted';
-            }
-            
-            Swal.fire({
-              icon: 'success',
-              title: 'Approved!',
-              text: `Material Request ${request.name} has been approved successfully.`,
-              confirmButtonColor: '#0d6efd'
+            // Fetch the updated request to get the actual workflow_state
+            this.materialService.getMaterialRequestById(request.name).subscribe({
+              next: (updatedReq) => {
+                console.log('Updated request data:', updatedReq);
+                
+                // Update the local list with the latest data
+                const reqIndex = this.materialRequests.findIndex(r => r.name === request.name);
+                if (reqIndex !== -1 && updatedReq.data) {
+                  this.materialRequests[reqIndex].status = updatedReq.data.status;
+                  this.materialRequests[reqIndex].workflow_state = updatedReq.data.workflow_state;
+                  console.log('Updated workflow_state to:', updatedReq.data.workflow_state);
+                }
+                
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Approved!',
+                  text: `Material Request ${request.name} has been approved successfully.`,
+                  confirmButtonColor: '#0d6efd'
+                });
+              },
+              error: (fetchErr) => {
+                console.error('Failed to fetch updated request:', fetchErr);
+                // Still show success but use optimistic update
+                const reqIndex = this.materialRequests.findIndex(r => r.name === request.name);
+                if (reqIndex !== -1) {
+                  this.materialRequests[reqIndex].status = 'Submitted';
+                  this.materialRequests[reqIndex].workflow_state = 'Approved';
+                }
+                
+                Swal.fire({
+                  icon: 'success',
+                  title: 'Approved!',
+                  text: `Material Request ${request.name} has been approved successfully.`,
+                  confirmButtonColor: '#0d6efd'
+                });
+              }
             });
-            
-            // Refresh the list after a short delay
-            setTimeout(() => {
-              this.loadDistrictMaterialRequests();
-            }, 1000);
           },
           error: (err) => {
             console.error('Approval failed:', err);
@@ -196,6 +238,7 @@ export class DistrictMaterialRequestsComponent implements OnInit {
             const reqIndex = this.materialRequests.findIndex(r => r.name === request.name);
             if (reqIndex !== -1) {
               this.materialRequests[reqIndex].status = 'Cancelled';
+              this.materialRequests[reqIndex].workflow_state = 'Rejected';
             }
             
             Swal.fire({
@@ -231,17 +274,93 @@ export class DistrictMaterialRequestsComponent implements OnInit {
 
   getStatusBadgeClass(status: string): string {
     const statusMap: { [key: string]: string } = {
+      // Workflow States
       'Draft': 'bg-secondary',
-      'Submitted': 'bg-primary',
-      'Pending': 'bg-warning',
+      'Pending': 'bg-warning text-dark',
+      'Pending Approval': 'bg-warning text-dark',
       'Approved': 'bg-success',
       'Rejected': 'bg-danger',
+      'Cancelled': 'bg-danger',
+      // Document Status
+      'Submitted': 'bg-primary',
       'Stopped': 'bg-dark'
     };
     return statusMap[status] || 'bg-secondary';
   }
+  
+  /**
+   * Get the display status - prefer workflow_state over status
+   */
+  getDisplayStatus(request: MaterialRequestData): string {
+    return request.workflow_state || request.status || 'Draft';
+  }
 
   refreshList() {
+    this.currentPage = 1;
     this.loadDistrictMaterialRequests();
   }
+  
+  /**
+   * Computed property for total pages
+   */
+  get totalPages(): number {
+    return Math.ceil(this.totalRecords / this.pageSize);
+  }
+
+  /**
+   * Change sorting column and direction
+   */
+  changeSort(column: string): void {
+    if (this.sortColumn === column) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortColumn = column;
+      this.sortDirection = 'asc';
+    }
+
+    // Reload data with new sorting
+    this.loadDistrictMaterialRequests();
+  }
+
+  /**
+   * Change current page
+   */
+  changePage(page: number): void {
+    if (page < 1 || page > this.totalPages) {
+      return;
+    }
+    
+    this.currentPage = page;
+    this.loadDistrictMaterialRequests();
+  }
+
+  /**
+   * Handle page size change
+   */
+  onPageSizeChange(): void {
+    this.currentPage = 1;
+    this.loadDistrictMaterialRequests();
+  }
+
+  /**
+   * Sort data based on current sort column and direction
+   */
+  private sortData(data: MaterialRequestData[]): MaterialRequestData[] {
+    return [...data].sort((a: any, b: any) => {
+      const valueA = a[this.sortColumn];
+      const valueB = b[this.sortColumn];
+
+      if (valueA < valueB) return this.sortDirection === 'asc' ? -1 : 1;
+      if (valueA > valueB) return this.sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+  
+  /**
+   * Navigate to view mode for a material request
+   */
+  viewRequestInForm(request: MaterialRequestData) {
+    this.router.navigate(['/materialRequest', request.name]);
+  }
+
 }

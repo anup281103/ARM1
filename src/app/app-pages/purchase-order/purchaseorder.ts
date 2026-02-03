@@ -1,15 +1,17 @@
 import { CommonModule } from '@angular/common';
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgApexchartsModule, ApexOptions } from 'ng-apexcharts';
+import { PurchaseOrderService } from '../../services/purchase-order.service';
+import { HttpClientModule } from '@angular/common/http';
 
 interface PurchaseOrder {
-  poNo: string;
+  name: string;          // ERPNext uses 'name' for PO ID
   status: string;
   supplier: string;
-  date: string;
-  total: number;
+  transaction_date: string;  // ERPNext field name
+  grand_total: number;       // ERPNext field name
   company: string;
 }
 
@@ -17,20 +19,50 @@ interface PurchaseOrder {
 @Component({
   selector: 'app-purchaseorder',
   standalone: true,
-  imports: [NgApexchartsModule, CommonModule, FormsModule, RouterModule   ],
+  imports: [NgApexchartsModule, CommonModule, FormsModule, RouterModule, HttpClientModule],
   templateUrl: './purchaseorder.html',
   styleUrl: './purchaseorder.scss'
 })
-export class Purchaseorder {
+export class Purchaseorder implements OnInit {
 
+  // Data
+  orders: PurchaseOrder[] = [];
+  loading: boolean = false;
+  error: string | null = null;
 
-// Charts
+  // Statistics
+  stats = {
+    total: 0,
+    toBill: 0,
+    completed: 0,
+    draft: 0,
+    toReceiveAndBill: 0
+  };
+  statsLoading: boolean = false;
 
-     monthlyChart!: Partial<ApexOptions>;
-    chartOptions_1!: Partial<ApexOptions>;
+  // Pagination
+  pageSize = 5;
+  currentPage = 1;
+  totalRecords = 0;  // Will be updated from API response
 
+  // Sorting
+  sortColumn: keyof PurchaseOrder | '' = '';
+  sortDirection: 'asc' | 'desc' = 'desc';
 
-  constructor() {
+  // Charts
+  monthlyChart!: Partial<ApexOptions>;
+  chartOptions_1!: Partial<ApexOptions>;
+
+  constructor(private purchaseOrderService: PurchaseOrderService) {
+    this.initializeCharts();
+  }
+
+  ngOnInit(): void {
+    this.loadPurchaseOrders();
+    this.loadStatistics();
+  }
+
+  initializeCharts(): void {
     this.monthlyChart = {
       chart: {
         type: 'bar',
@@ -62,7 +94,8 @@ export class Purchaseorder {
         }
       }
     };
-     this.chartOptions_1 = {
+
+    this.chartOptions_1 = {
       chart: {
         height: 150,
         type: 'donut'
@@ -93,7 +126,7 @@ export class Purchaseorder {
           left: 0
         }
       },
-     colors: ['#d6d6d6', '#2955d2'],
+      colors: ['#d6d6d6', '#2955d2'],
       fill: {
         opacity: [1, 1]
       },
@@ -103,77 +136,126 @@ export class Purchaseorder {
     };
   }
 
+  /**
+   * Load purchase order statistics from ERPNext API
+   */
+  loadStatistics(): void {
+    this.statsLoading = true;
 
-  // Table
-  orders: PurchaseOrder[] = [
-    {
-      poNo: 'PUR-ORD-2024-09004',
-      status: 'Completed',
-      supplier: 'RG Arms Ltd',
-      date: '2024-01-27',
-      total: 0,
-      company: 'RG Arms Ltd'
-    },
-    {
-      poNo: 'PUR-ORD-2024-09003',
-      status: 'Completed',
-      supplier: 'RG Arms Ltd',
-      date: '2024-01-25',
-      total: 7450000,
-      company: 'RG Arms Ltd'
-    },
-    {
-      poNo: 'PUR-ORD-2024-09002',
-      status: 'To Bill',
-      supplier: 'RG Arms Ltd',
-      date: '2024-01-22',
-      total: 0,
-      company: 'RG Arms Ltd'
+    // Fetch all purchase orders with just name and status fields for counting
+    const fields = JSON.stringify(['name', 'status']);
+    const url = `limit_start=0&limit_page_length=999999`; // Get all records for statistics
+
+    this.purchaseOrderService.getPurchaseOrders(0, 999999, 'name desc').subscribe({
+      next: (response) => {
+        const allOrders = response.data || [];
+        
+        // Calculate statistics
+        this.stats.total = allOrders.length;
+        this.stats.completed = allOrders.filter((o: any) => o.status === 'Completed').length;
+        this.stats.toBill = allOrders.filter((o: any) => o.status === 'To Bill').length;
+        this.stats.draft = allOrders.filter((o: any) => o.status === 'Draft').length;
+        this.stats.toReceiveAndBill = allOrders.filter((o: any) => o.status === 'To Receive and Bill').length;
+        
+        this.statsLoading = false;
+      },
+      error: (err) => {
+        console.error('Error loading statistics:', err);
+        this.statsLoading = false;
+        // Keep default values on error
+      }
+    });
+  }
+
+  /**
+   * Load purchase orders from ERPNext API
+   */
+  loadPurchaseOrders(): void {
+    this.loading = true;
+    this.error = null;
+
+    // Calculate pagination offset
+    const limitStart = (this.currentPage - 1) * this.pageSize;
+
+    // Build order_by parameter for ERPNext
+    let orderBy = 'name desc'; // Default sorting
+    if (this.sortColumn) {
+      orderBy = `${this.sortColumn} ${this.sortDirection}`;
     }
-  ];
 
-  // pagination
-  pageSize = 5;
-  currentPage = 1;
+    this.purchaseOrderService
+      .getPurchaseOrders(limitStart, this.pageSize, orderBy)
+      .subscribe({
+        next: (response) => {
+          this.orders = response.data || [];
+          this.loading = false;
 
-  // sorting
-  sortColumn: keyof PurchaseOrder | '' = '';
-  sortDirection: 'asc' | 'desc' = 'asc';
+          // ERPNext doesn't return total count in the standard response
+          // If you need accurate total pages, you may need a separate count API call
+          // For now, we'll estimate based on returned data
+          if (response.data && response.data.length === this.pageSize) {
+            // If we got a full page, there might be more
+            this.totalRecords = (this.currentPage * this.pageSize) + 1;
+          } else {
+            // Last page
+            this.totalRecords = (this.currentPage - 1) * this.pageSize + (response.data?.length || 0);
+          }
+        },
+        error: (err) => {
+          console.error('Error loading purchase orders:', err);
+          this.error = 'Failed to load purchase orders. Please try again.';
+          this.loading = false;
+          this.orders = [];
+        }
+      });
+  }
 
   get totalPages(): number {
-    return Math.ceil(this.orders.length / this.pageSize);
+    return Math.ceil(this.totalRecords / this.pageSize);
   }
 
   get paginatedOrders(): PurchaseOrder[] {
-    let data = [...this.orders];
-
-    // sorting
-    if (this.sortColumn) {
-      data.sort((a: any, b: any) => {
-        const valueA = a[this.sortColumn];
-        const valueB = b[this.sortColumn];
-
-        if (valueA < valueB) return this.sortDirection === 'asc' ? -1 : 1;
-        if (valueA > valueB) return this.sortDirection === 'asc' ? 1 : -1;
-        return 0;
-      });
-    }
-
-    // pagination
-    const start = (this.currentPage - 1) * this.pageSize;
-    return data.slice(start, start + this.pageSize);
+    // Since we're fetching paginated data from API, just return all orders
+    return this.orders;
   }
 
-  changeSort(column: keyof PurchaseOrder) {
+  /**
+   * Change sorting column and direction
+   * Triggers API call with new sorting parameters
+   */
+  changeSort(column: keyof PurchaseOrder): void {
     if (this.sortColumn === column) {
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
       this.sortColumn = column;
       this.sortDirection = 'asc';
     }
+
+    // Reset to first page when sorting changes
+    this.currentPage = 1;
+
+    // Reload data with new sorting
+    this.loadPurchaseOrders();
   }
 
-  changePage(page: number) {
+  /**
+   * Change current page
+   * Triggers API call with new pagination parameters
+   */
+  changePage(page: number): void {
+    if (page < 1 || page > this.totalPages) {
+      return;
+    }
+    
     this.currentPage = page;
+    this.loadPurchaseOrders();
+  }
+
+  /**
+   * Handle page size change
+   */
+  onPageSizeChange(): void {
+    this.currentPage = 1;
+    this.loadPurchaseOrders();
   }
 }

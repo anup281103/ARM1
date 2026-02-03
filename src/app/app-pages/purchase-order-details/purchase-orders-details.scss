@@ -1,19 +1,19 @@
 .journey-wrapper {
   display: flex;
-  flex-wrap: wrap;
+  // flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap:4px;
 }
 
 .journey-step {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 12px 18px;
+  padding: 12px;
   border-radius: 14px;
   border: 1px solid #dee2e6;
   background: #f8f9fa;
-  min-width: 207px;
+  min-width: 127px;
 }
 
 .journey-step i {

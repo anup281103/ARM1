@@ -1,11 +1,10 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { RouterLink, Router } from '@angular/router';
 import { MaterialService } from 'src/app/services/material.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { UserService } from 'src/app/services/user-service';
-import { Router } from '@angular/router';
 import Swal from 'sweetalert2';
 
 interface MaterialRequestItem {
@@ -23,6 +22,7 @@ interface MaterialRequestData {
   company: string;
   owner: string;
   status: string;
+  workflow_state?: string;
   items: MaterialRequestItem[];
   custom_district?: string;
 }
@@ -38,6 +38,15 @@ export class MyMaterialRequestsComponent implements OnInit {
   materialRequests: MaterialRequestData[] = [];
   loading = false;
   user: any = null;
+
+  // Pagination
+  pageSize = 10;
+  currentPage = 1;
+  totalRecords = 0;
+
+  // Sorting
+  sortColumn: string = 'name';
+  sortDirection: 'asc' | 'desc' = 'desc';
 
   constructor(
     private materialService: MaterialService,
@@ -61,7 +70,6 @@ export class MyMaterialRequestsComponent implements OnInit {
     }
 
     this.loadUserSession();
-    this.loadMyMaterialRequests();
   }
 
   loadUserSession() {
@@ -72,12 +80,25 @@ export class MyMaterialRequestsComponent implements OnInit {
           this.authService.getUserDetails(userEmail).subscribe({
             next: (userRes) => {
               this.user = userRes.data;
+              // Load requests AFTER user is loaded
+              this.loadMyMaterialRequests();
             },
-            error: (err) => console.error('Failed to fetch user details', err)
+            error: (err) => {
+              console.error('Failed to fetch user details', err);
+              // Still try to load requests using userService
+              this.loadMyMaterialRequests();
+            }
           });
+        } else {
+          // No user email, try loading with userService
+          this.loadMyMaterialRequests();
         }
       },
-      error: (err) => console.error('Failed to get logged in user', err)
+      error: (err) => {
+        console.error('Failed to get logged in user', err);
+        // Still try to load requests
+        this.loadMyMaterialRequests();
+      }
     });
   }
 
@@ -85,17 +106,39 @@ export class MyMaterialRequestsComponent implements OnInit {
     this.loading = true;
     const currentUser = this.user?.email || this.userService.getUser()?.email;
     
-    // Fetch material requests created by the current user
-    this.materialService.getMaterialRequests().subscribe({
+    if (!currentUser) {
+      this.materialRequests = [];
+      this.loading = false;
+      return;
+    }
+
+    // Calculate pagination offset
+    const limitStart = (this.currentPage - 1) * this.pageSize;
+
+    // Build order_by parameter
+    const orderBy = `${this.sortColumn} ${this.sortDirection}`;
+
+    // Build filters for current user
+    const filters = [['owner', '=', currentUser]];
+    
+    // Fetch material requests with pagination and sorting from ERPNext
+    this.materialService.getMaterialRequests(filters).subscribe({
       next: (res: any) => {
-        // Filter requests by current user (owner)
-        if (currentUser) {
-          this.materialRequests = (res.data || []).filter(
-            (req: MaterialRequestData) => req.owner === currentUser
-          );
-        } else {
-          this.materialRequests = res.data || [];
-        }
+        // Note: We still get all filtered results, but we'll paginate on client side
+        // For true server-side pagination, we'd need to modify the service to accept limit parameters
+        const allUserRequests = res.data || [];
+        
+        // Sort the data
+        const sortedRequests = this.sortData(allUserRequests);
+        
+        // Calculate total
+        this.totalRecords = sortedRequests.length;
+        
+        // Apply pagination
+        const start = limitStart;
+        const end = start + this.pageSize;
+        this.materialRequests = sortedRequests.slice(start, end);
+        
         this.loading = false;
         console.log('My material requests loaded:', this.materialRequests);
       },
@@ -111,6 +154,20 @@ export class MyMaterialRequestsComponent implements OnInit {
     });
   }
 
+  /**
+   * Sort data based on current sort column and direction
+   */
+  private sortData(data: MaterialRequestData[]): MaterialRequestData[] {
+    return [...data].sort((a: any, b: any) => {
+      const valueA = a[this.sortColumn];
+      const valueB = b[this.sortColumn];
+
+      if (valueA < valueB) return this.sortDirection === 'asc' ? -1 : 1;
+      if (valueA > valueB) return this.sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
   getItemsSummary(items: MaterialRequestItem[]): string {
     if (!items || items.length === 0) return 'No items';
     if (items.length === 1) return `${items[0].item_code} (${items[0].qty})`;
@@ -119,14 +176,25 @@ export class MyMaterialRequestsComponent implements OnInit {
 
   getStatusBadgeClass(status: string): string {
     const statusMap: { [key: string]: string } = {
+      // Workflow States
       'Draft': 'bg-secondary',
-      'Submitted': 'bg-primary',
-      'Pending': 'bg-warning',
+      'Pending': 'bg-warning text-dark',
+      'Pending Approval': 'bg-warning text-dark',
       'Approved': 'bg-success',
       'Rejected': 'bg-danger',
+      'Cancelled': 'bg-danger',
+      // Document Status
+      'Submitted': 'bg-primary',
       'Stopped': 'bg-dark'
     };
     return statusMap[status] || 'bg-secondary';
+  }
+  
+  /**
+   * Get the display status - prefer workflow_state over status
+   */
+  getDisplayStatus(request: MaterialRequestData): string {
+    return request.workflow_state || request.status || 'Draft';
   }
 
   viewRequestDetails(request: MaterialRequestData) {
@@ -138,7 +206,7 @@ export class MyMaterialRequestsComponent implements OnInit {
           <p><strong>Type:</strong> ${request.material_request_type}</p>
           <p><strong>Company:</strong> ${request.company}</p>
           <p><strong>District:</strong> ${request.custom_district || 'N/A'}</p>
-          <p><strong>Status:</strong> ${request.status}</p>
+          <p><strong>Status:</strong> ${this.getDisplayStatus(request)}</p>
           <hr>
           <h6>Items:</h6>
           <ul class="list-unstyled">
@@ -154,6 +222,56 @@ export class MyMaterialRequestsComponent implements OnInit {
   }
 
   refreshList() {
+    this.currentPage = 1;
+    this.loadMyMaterialRequests();
+  }
+  
+  /**
+   * Navigate to view mode for a material request
+   */
+  viewRequestInForm(request: MaterialRequestData) {
+    this.router.navigate(['/materialRequest', request.name]);
+  }
+
+  /**
+   * Computed property for total pages
+   */
+  get totalPages(): number {
+    return Math.ceil(this.totalRecords / this.pageSize);
+  }
+
+  /**
+   * Change sorting column and direction
+   */
+  changeSort(column: string): void {
+    if (this.sortColumn === column) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortColumn = column;
+      this.sortDirection = 'asc';
+    }
+
+    // Reload data with new sorting
+    this.loadMyMaterialRequests();
+  }
+
+  /**
+   * Change current page
+   */
+  changePage(page: number): void {
+    if (page < 1 || page > this.totalPages) {
+      return;
+    }
+    
+    this.currentPage = page;
+    this.loadMyMaterialRequests();
+  }
+
+  /**
+   * Handle page size change
+   */
+  onPageSizeChange(): void {
+    this.currentPage = 1;
     this.loadMyMaterialRequests();
   }
 }

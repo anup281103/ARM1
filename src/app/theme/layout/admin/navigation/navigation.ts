@@ -113,32 +113,32 @@ export const NavigationItems: NavigationItem[] =
   //     }
   //   ]
   // },
-  {
-    id: 'Authentication',
-    title: 'Authentication',
-    type: 'group',
-    icon: 'icon-group',
-    children: [
-      // {
-      //   id: 'signup',
-      //   title: 'Sign up',
-      //   type: 'item',
-      //   url: '/register',
-      //   icon: 'feather icon-at-sign',
-      //   target: true,
-      //   breadcrumbs: false
-      // },
-      {
-        id: 'signin',
-        title: 'Sign in',
-        type: 'item',
-        url: '/login',
-        icon: 'feather icon-log-in',
-        target: true,
-        breadcrumbs: false
-      }
-    ]
-  },
+  // {
+  //   id: 'Authentication',
+  //   title: 'Authentication',
+  //   type: 'group',
+  //   icon: 'icon-group',
+  //   children: [
+  //     // {
+  //     //   id: 'signup',
+  //     //   title: 'Sign up',
+  //     //   type: 'item',
+  //     //   url: '/register',
+  //     //   icon: 'feather icon-at-sign',
+  //     //   target: true,
+  //     //   breadcrumbs: false
+  //     // },
+  //     // {
+  //     //   id: 'signin',
+  //     //   title: 'Sign in',
+  //     //   type: 'item',
+  //     //   url: '/login',
+  //     //   icon: 'feather icon-log-in',
+  //     //   target: true,
+  //     //   breadcrumbs: false
+  //     // }
+  //   ]
+  // },
   {
     id: 'dealer-operations',
     title: 'Dealer Operations',
@@ -172,15 +172,7 @@ export const NavigationItems: NavigationItem[] =
         roles: ['Dealer', 'Purchase User'],
         breadcrumbs: false
       },
-      {
-        id: 'purchase-order-details',
-        title: 'Purchase Order Details',
-        type: 'item',
-        url: '/purchase-order-details',
-        icon: 'feather icon-file',
-        roles: ['Dealer', 'Purchase User'],
-        breadcrumbs: false
-      }
+      
     ]
   },
   {

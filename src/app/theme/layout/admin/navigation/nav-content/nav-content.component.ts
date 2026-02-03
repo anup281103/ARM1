@@ -48,7 +48,10 @@ export class NavContentComponent implements OnInit {
     if (this.windowWidth < 992) {
       setTimeout(() => {
         document.querySelector('.pcoded-navbar')?.classList.add('menupos-static');
-        (document.querySelector('#nav-ps-gradient-able') as HTMLElement).style.height = '100%';
+        const navElement = document.querySelector('#nav-ps-gradient-able') as HTMLElement;
+        if (navElement) {
+          navElement.style.height = '100%';
+        }
       }, 500);
     }
 

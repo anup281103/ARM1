@@ -18,7 +18,7 @@
         </div>
 
         <div class="text">
-          <h2 class="text-white">19</h2>
+          <h2 class="text-white">{{ stats.total }}</h2>
           <p>Total Purchase Orders</p>
         </div>
       </div>
@@ -37,7 +37,7 @@
         </div>
 
         <div class="text">
-          <h2 class="text-white">15 <span class="text-black">to Bill</span></h2>
+          <h2 class="text-black">{{ stats.toBill }} <span class="text-black">to Bill</span></h2>
           <p class="text-black">Marked as To Bill</p>
         </div>
       </div>
@@ -55,7 +55,7 @@
         </div>
 
         <div class="text">
-         <h2 class="text-white">15 <span class="text-black">Completed</span></h2>
+         <h2 class="text-black">{{ stats.completed }} <span class="text-black">Completed</span></h2>
           <p class="text-black">Closed & billed</p>
         </div>
       </div>
@@ -78,37 +78,37 @@
 
           <div class="mb-3">
             <div class="d-flex justify-content-between">
-              <small>Draft</small><small>1</small>
+              <small>Draft</small><small>{{ stats.draft }}</small>
             </div>
             <div class="progress">
-              <div class="progress-bar bg-primary" style="width: 10%"></div>
+              <div class="progress-bar bg-primary" [style.width.%]="stats.total > 0 ? (stats.draft / stats.total * 100) : 0"></div>
             </div>
           </div>
 
           <div class="mb-3">
             <div class="d-flex justify-content-between">
-              <small>Completed</small><small>4</small>
+              <small>Completed</small><small>{{ stats.completed }}</small>
             </div>
             <div class="progress">
-              <div class="progress-bar bg-success" style="width: 40%"></div>
+              <div class="progress-bar bg-success" [style.width.%]="stats.total > 0 ? (stats.completed / stats.total * 100) : 0"></div>
             </div>
           </div>
 
           <div class="mb-3">
             <div class="d-flex justify-content-between">
-              <small>To Bill</small><small>11</small>
+              <small>To Bill</small><small>{{ stats.toBill }}</small>
             </div>
             <div class="progress">
-              <div class="progress-bar bg-warning" style="width: 70%"></div>
+              <div class="progress-bar bg-warning" [style.width.%]="stats.total > 0 ? (stats.toBill / stats.total * 100) : 0"></div>
             </div>
           </div>
 
           <div>
             <div class="d-flex justify-content-between">
-              <small>To Receive & Bill</small><small>3</small>
+              <small>To Receive & Bill</small><small>{{ stats.toReceiveAndBill }}</small>
             </div>
             <div class="progress">
-              <div class="progress-bar bg-info" style="width: 30%"></div>
+              <div class="progress-bar bg-info" [style.width.%]="stats.total > 0 ? (stats.toReceiveAndBill / stats.total * 100) : 0"></div>
             </div>
           </div>
 
@@ -157,11 +157,11 @@
   <div class="card-body">
 
     <div class="d-flex justify-content-between mb-3">
-      <h6 class="text-uppercase fw-semibold text-muted mb-3" routerLink="/purchaseOrdersDetails">Purchase Orders</h6>
+      <h6 class="text-uppercase fw-semibold text-muted mb-3" routerLink="/purchaseOrderDetails">Purchase Orders</h6>
 
       <select class="form-select form-select-sm w-auto"
               [(ngModel)]="pageSize"
-              (change)="currentPage = 1">
+              (change)="onPageSizeChange()">
         <option [value]="5">5</option>
         <option [value]="10">10</option>
         <option [value]="20">20</option>
@@ -172,44 +172,82 @@
       <table class="table table-hover table-bordered align-middle">
         <thead class="table-light">
           <tr>
-            <th (click)="changeSort('poNo')" class="sortable">
+            <th (click)="changeSort('name')" class="sortable">
               PO Number
-              <span *ngIf="sortColumn === 'poNo'">
+              <span *ngIf="sortColumn === 'name'">
                 {{ sortDirection === 'asc' ? '▲' : '▼' }}
               </span>
             </th>
 
-            <th (click)="changeSort('status')" class="sortable">Status</th>
-            <th (click)="changeSort('supplier')" class="sortable">Supplier</th>
-            <th (click)="changeSort('date')" class="sortable">Date</th>
-            <th (click)="changeSort('total')" class="sortable">Total</th>
+            <th (click)="changeSort('status')" class="sortable">
+              Status
+              <span *ngIf="sortColumn === 'status'">
+                {{ sortDirection === 'asc' ? '▲' : '▼' }}
+              </span>
+            </th>
+            <th (click)="changeSort('supplier')" class="sortable">
+              Supplier
+              <span *ngIf="sortColumn === 'supplier'">
+                {{ sortDirection === 'asc' ? '▲' : '▼' }}
+              </span>
+            </th>
+            <th (click)="changeSort('transaction_date')" class="sortable">
+              Date
+              <span *ngIf="sortColumn === 'transaction_date'">
+                {{ sortDirection === 'asc' ? '▲' : '▼' }}
+              </span>
+            </th>
+            <th (click)="changeSort('grand_total')" class="sortable">
+              Total
+              <span *ngIf="sortColumn === 'grand_total'">
+                {{ sortDirection === 'asc' ? '▲' : '▼' }}
+              </span>
+            </th>
             <th>Company</th>
           </tr>
         </thead>
 
         <tbody>
-          <tr *ngFor="let row of paginatedOrders">
+          <tr *ngIf="loading">
+            <td colspan="6" class="text-center py-4">
+              <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="error && !loading">
+            <td colspan="6" class="text-center text-danger py-4">
+              {{ error }}
+            </td>
+          </tr>
+          <tr *ngIf="!loading && !error && orders.length === 0">
+            <td colspan="6" class="text-center text-muted py-4">
+              No purchase orders found.
+            </td>
+          </tr>
+          <tr *ngFor="let row of paginatedOrders" [hidden]="loading || error">
             <td class="text-primary fw-semibold">
-                
                  <a
     class="text-red text-decoration-none"
-     routerLink="/purchaseOrdersDetails"
+     [routerLink]="['/purchaseOrderDetails', row.name]"
   >
-    {{ row.poNo }}
+    {{ row.name }}
   </a>
                 </td>
             <td>
               <span class="badge"
                 [ngClass]="{
                   'bg-success': row.status === 'Completed',
-                  'bg-warning text-dark': row.status === 'To Bill'
+                  'bg-warning text-black': row.status === 'To Bill',
+                  'bg-info text-dark': row.status === 'To Receive and Bill',
+                  'bg-secondary': row.status === 'Draft'
                 }">
                 {{ row.status }}
               </span>
             </td>
             <td>{{ row.supplier }}</td>
-            <td>{{ row.date }}</td>
-            <td>{{ row.total | number }}</td>
+            <td>{{ row.transaction_date }}</td>
+            <td>{{ row.grand_total | number }}</td>
             <td>{{ row.company }}</td>
           </tr>
         </tbody>

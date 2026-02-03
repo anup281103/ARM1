@@ -26,11 +26,16 @@ const routes: Routes = [
       },
       {
         path: 'analytics',
-        loadComponent: () => import('./demo/dashboard/dash-analytics.component').then((c) => c.DashAnalyticsComponent)
+        loadComponent: () => import('./app-pages/dashboard/dash-analytics.component').then((c) => c.DashAnalyticsComponent)
       },
+      // {
+      //   path: 'component',
+      //   loadChildren: () => import('./demo/ui-element/ui-basic.module').then((m) => m.UiBasicModule)
+      // },
+
       {
-        path: 'component',
-        loadChildren: () => import('./demo/ui-element/ui-basic.module').then((m) => m.UiBasicModule)
+        path: 'materialRequest/:id',
+        component: MaterialRequest
       },
 
       {
@@ -59,26 +64,31 @@ const routes: Routes = [
       },
 
       {
-        path: 'purchase-order-details',
+        path: 'purchaseOrderDetails/:id',
         loadComponent: () => import('./app-pages/purchase-order-details/purchase-orders-details').then((c) => c.PurchaseOrdersDetails)
+      },
+
+      {
+        path: 'profile',
+        loadComponent: () => import('./app-pages/profile-page/profile-page').then((c) => c.ProfilePage)
       },
 
       // {
       //   path: 'chart',
       //   loadComponent: () => import('./demo/chart-maps/core-apex.component').then((c) => c.CoreApexComponent)
       // },
-      {
-        path: 'forms',
-        loadComponent: () => import('./demo/forms/form-elements/form-elements.component').then((c) => c.FormElementsComponent)
-      },
-      {
-        path: 'tables',
-        loadComponent: () => import('./demo/tables/tbl-bootstrap/tbl-bootstrap.component').then((c) => c.TblBootstrapComponent)
-      },
-      {
-        path: 'sample-page',
-        loadComponent: () => import('./demo/other/sample-page/sample-page.component').then((c) => c.SamplePageComponent)
-      }
+      // {
+      //   path: 'forms',
+      //   loadComponent: () => import('./demo/forms/form-elements/form-elements.component').then((c) => c.FormElementsComponent)
+      // },
+      // {
+      //   path: 'tables',
+      //   loadComponent: () => import('./demo/tables/tbl-bootstrap/tbl-bootstrap.component').then((c) => c.TblBootstrapComponent)
+      // },
+      // {
+      //   path: 'sample-page',
+      //   loadComponent: () => import('./demo/other/sample-page/sample-page.component').then((c) => c.SamplePageComponent)
+      // }
       // {
       //   path: 'resgister-employee',
       //   loadComponent: () => import('./employee/register/register').then((c) => c.Register)
@@ -107,11 +117,11 @@ const routes: Routes = [
     children: [
       {
         path: 'login',
-        loadComponent: () => import('./demo/pages/authentication/sign-in/sign-in.component').then((c) => c.SignInComponent)
+        loadComponent: () => import('./authentication/sign-in/sign-in.component').then((c) => c.SignInComponent)
       },
       {
         path: 'register',
-        loadComponent: () => import('./demo/pages/authentication/sign-in/sign-in.component').then((c) => c.SignInComponent)
+        loadComponent: () => import('./authentication/sign-in/sign-in.component').then((c) => c.SignInComponent)
       }
       // {
       //   path: 'contractual-registration',

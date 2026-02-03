@@ -8,7 +8,7 @@ import { ProductSaleComponent } from './product-sale/product-sale.component';
 // 3rd party import
 
 import { ApexOptions, ChartComponent, NgApexchartsModule } from 'ng-apexcharts';
-import { UserModel } from 'src/app/models/user-detail.model';
+// import { UserModel } from 'src/app/models/user-detail.model';
 import { UserService } from 'src/app/services/user-service';
 import { AuthService } from 'src/app/services/auth.service';
 @Component({

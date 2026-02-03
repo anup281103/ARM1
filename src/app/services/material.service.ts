@@ -28,9 +28,9 @@ export class MaterialService {
    * You might want to filter or fetch specific fields
    */
   getItems(): Observable<any> {
-    // Example: Fetching Item Code and Item Name. Adjust filters as needed.
+    // Fetching Item Code and Item Name with pagination to get all records
     const fields = JSON.stringify(["item_code", "item_name", "stock_uom"]);
-    return this.http.get(`${this.baseUrl}/api/resource/Item?fields=${fields}`, { withCredentials: true });
+    return this.http.get(`${this.baseUrl}/api/resource/Item?fields=${fields}&limit_page_length=500`, { withCredentials: true });
   }
 
   /**
@@ -38,7 +38,7 @@ export class MaterialService {
    */
   getWarehouses(): Observable<any> {
     const fields = JSON.stringify(["warehouse_name", "name"]);
-    return this.http.get(`${this.baseUrl}/api/resource/Warehouse?fields=${fields}`, { withCredentials: true });
+    return this.http.get(`${this.baseUrl}/api/resource/Warehouse?fields=${fields}&limit_page_length=500`, { withCredentials: true });
   }
 
   /**
@@ -47,7 +47,7 @@ export class MaterialService {
    */
   getCompanies(): Observable<any> {
     const fields = JSON.stringify(["name", "company_name", "abbr"]);
-    return this.http.get(`${this.baseUrl}/api/resource/Company?fields=${fields}`, { withCredentials: true });
+    return this.http.get(`${this.baseUrl}/api/resource/Company?fields=${fields}&limit_page_length=500`, { withCredentials: true });
   }
 
   /**
@@ -60,14 +60,14 @@ export class MaterialService {
    */
   getDistricts(): Observable<any> {
     const fields = JSON.stringify(["name", "district_name"]);
-    return this.http.get(`${this.baseUrl}/api/resource/District?fields=${fields}`, { withCredentials: true });
+    return this.http.get(`${this.baseUrl}/api/resource/District?fields=${fields}&limit_page_length=500`, { withCredentials: true });
   }
 
   /**
    * Fetch Material Requests for approval
    * Filter by status if needed (e.g., Submitted, Pending)
    */
-  getMaterialRequests(filters?: any): Observable<any> {
+  getMaterialRequests(filters?: any, limitStart: number = 0, limitPageLength: number = 500): Observable<any> {
     const fields = JSON.stringify([
       "name", 
       "transaction_date", 
@@ -76,12 +76,13 @@ export class MaterialService {
       "company", 
       "owner", 
       "status",
+      "workflow_state",
       "custom_district",
       "items"
     ]);
     
-    // You can add filters for status, e.g., ?filters=[["status","in",["Submitted","Pending"]]]
-    let url = `${this.baseUrl}/api/resource/Material Request?fields=${fields}`;
+    // Build URL with pagination - use high limit to get all records
+    let url = `${this.baseUrl}/api/resource/Material Request?fields=${fields}&limit_start=${limitStart}&limit_page_length=${limitPageLength}&order_by=creation desc`;
     
     if (filters) {
       const filterStr = JSON.stringify(filters);
@@ -89,6 +90,28 @@ export class MaterialService {
     }
     
     return this.http.get(url, { withCredentials: true });
+  }
+  
+  /**
+   * Get a single Material Request by ID
+   */
+  getMaterialRequestById(requestId: string): Observable<any> {
+    return this.http.get(
+      `${this.baseUrl}/api/resource/Material Request/${requestId}`,
+      { withCredentials: true }
+    );
+  }
+  
+  /**
+   * Submit a material request (changes docstatus from 0 to 1)
+   * This sets the status to "Pending" or "Submitted" depending on ERPNext configuration
+   */
+  submitMaterialRequest(requestId: string): Observable<any> {
+    return this.http.post(
+      `${this.baseUrl}/api/resource/Material Request/${requestId}`,
+      { docstatus: 1 },
+      { withCredentials: true }
+    );
   }
 
   /**
@@ -118,5 +141,36 @@ export class MaterialService {
       payload, 
       { withCredentials: true }
     );
+  }
+  
+  /**
+   * Apply workflow action to Material Request using ERPNext workflow API
+   * @param requestId - Material Request ID
+   * @param action - Workflow action name (e.g., "Submit For Approval", "Approve", "Reject")
+   */
+  applyWorkflow(requestId: string, action: string): Observable<any> {
+    // ERPNext requires the doc as a stringified JSON
+    const doc = JSON.stringify({
+      doctype: 'Material Request',
+      name: requestId
+    });
+    
+    return this.http.post(
+      `${this.baseUrl}/api/method/frappe.model.workflow.apply_workflow`,
+      {
+        doc: doc,
+        action: action
+      },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Fetch Suppliers from ERPNext
+   * Endpoint: /api/resource/Supplier
+   */
+  getSuppliers(): Observable<any> {
+    const fields = JSON.stringify(["name", "supplier_name"]);
+    return this.http.get(`${this.baseUrl}/api/resource/Supplier?fields=${fields}&limit_page_length=500`, { withCredentials: true });
   }
 }
