@@ -243,7 +243,7 @@
     semver "7.7.2"
     yargs "17.7.2"
 
-"@angular/common@^20.0.0", "@angular/common@^20.0.0 || ^21.0.0", "@angular/common@>=19.0.0", "@angular/common@20.0.5":
+"@angular/common@^20.0.0", "@angular/common@^20.0.0 || ^21.0.0", "@angular/common@>=16.0.0", "@angular/common@>=19.0.0", "@angular/common@20.0.5":
   version "20.0.5"
   resolved "https://registry.npmjs.org/@angular/common/-/common-20.0.5.tgz"
   integrity sha512-R7SQaOVYjVnrGHOq2RnuPn0pGofGVTDgy5EoHzF8ulb5MG/d7GFwCaMgfAbp3/Cw1CJzP2ZB54O8x9SMuqExyg==
@@ -271,7 +271,7 @@
   dependencies:
     tslib "^2.3.0"
 
-"@angular/core@^20.0.0", "@angular/core@^20.0.0 || ^21.0.0", "@angular/core@>=19.0.0", "@angular/core@20.0.5":
+"@angular/core@^20.0.0", "@angular/core@^20.0.0 || ^21.0.0", "@angular/core@>=16.0.0", "@angular/core@>=19.0.0", "@angular/core@20.0.5":
   version "20.0.5"
   resolved "https://registry.npmjs.org/@angular/core/-/core-20.0.5.tgz"
   integrity sha512-r7YQXZvKPAMUXeo3psKTZxyYJrwidTwDPrzxMX3EGqZxv0eDnMPWCxH2y0O2X4BT0Nm1iAqx3zhGrSFc0vD60Q==
@@ -1767,6 +1767,25 @@
   version "4.0.3"
   resolved "https://registry.npmjs.org/@svgdotjs/svg.select.js/-/svg.select.js-4.0.3.tgz"
   integrity sha512-qkMgso1sd2hXKd1FZ1weO7ANq12sNmQJeGDjs46QwDVsxSRcHmvWKL2NDF7Yimpwf3sl5esOLkPqtV2bQ3v/Jg==
+
+"@tanstack/angular-query-experimental@^5.90.25":
+  version "5.90.25"
+  resolved "https://registry.npmjs.org/@tanstack/angular-query-experimental/-/angular-query-experimental-5.90.25.tgz"
+  integrity sha512-8MmtvEq83kRbwtt6NNbDAWPMOFHLxSmvhScFtdmBP/Xo5gSSzAf4JHcblQDHV/CgWIGKOp7eOa6aXDiVIK+kbw==
+  dependencies:
+    "@tanstack/query-core" "5.90.20"
+  optionalDependencies:
+    "@tanstack/query-devtools" "5.93.0"
+
+"@tanstack/query-core@5.90.20":
+  version "5.90.20"
+  resolved "https://registry.npmjs.org/@tanstack/query-core/-/query-core-5.90.20.tgz"
+  integrity sha512-OMD2HLpNouXEfZJWcKeVKUgQ5n+n3A2JFmBaScpNDUqSrQSjiveC7dKMe53uJUg1nDG16ttFPz2xfilz6i2uVg==
+
+"@tanstack/query-devtools@5.93.0":
+  version "5.93.0"
+  resolved "https://registry.npmjs.org/@tanstack/query-devtools/-/query-devtools-5.93.0.tgz"
+  integrity sha512-+kpsx1NQnOFTZsw6HAFCW3HkKg0+2cepGtAWXjiiSOJJ1CtQpt72EE2nyZb+AjAbLRPoeRmPJ8MtQd8r8gsPdg==
 
 "@tufjs/canonical-json@2.0.0":
   version "2.0.0"

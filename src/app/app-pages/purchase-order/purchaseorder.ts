@@ -1,10 +1,12 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { NgApexchartsModule, ApexOptions } from 'ng-apexcharts';
 import { PurchaseOrderService } from '../../services/purchase-order.service';
 import { HttpClientModule } from '@angular/common/http';
+import { injectQuery, keepPreviousData } from '@tanstack/angular-query-experimental';
+import { lastValueFrom } from 'rxjs';
 
 interface PurchaseOrder {
   name: string;          // ERPNext uses 'name' for PO ID
@@ -25,29 +27,64 @@ interface PurchaseOrder {
 })
 export class Purchaseorder implements OnInit {
 
-  // Data
-  orders: PurchaseOrder[] = [];
-  loading: boolean = false;
-  error: string | null = null;
+  // Signals for Pagination & Sorting
+  pageSize = signal(5);
+  currentPage = signal(1);
+  sortColumn = signal<keyof PurchaseOrder | ''>('');
+  sortDirection = signal<'asc' | 'desc'>('desc');
 
-  // Statistics
-  stats = {
-    total: 0,
-    toBill: 0,
-    completed: 0,
-    draft: 0,
-    toReceiveAndBill: 0
-  };
-  statsLoading: boolean = false;
+  // Queries
+  countQuery = injectQuery(() => ({
+    queryKey: ['purchase-orders-count'],
+    queryFn: async () => {
+      return lastValueFrom(this.purchaseOrderService.getPurchaseOrdersCount());
+    }
+  }));
 
-  // Pagination
-  pageSize = 5;
-  currentPage = 1;
-  totalRecords = 0;  // Will be updated from API response
+  dataQuery = injectQuery(() => ({
+    queryKey: ['purchase-orders', this.currentPage(), this.pageSize(), this.sortColumn(), this.sortDirection()],
+    queryFn: async () => {
+      let orderBy = 'name desc';
+      if (this.sortColumn()) {
+        orderBy = `${this.sortColumn()} ${this.sortDirection()}`;
+      }
+      return lastValueFrom(
+        this.purchaseOrderService.getPurchaseOrders(
+          (this.currentPage() - 1) * this.pageSize(),
+          this.pageSize(),
+          orderBy
+        )
+      );
+    },
+    placeholderData: keepPreviousData
+  }));
 
-  // Sorting
-  sortColumn: keyof PurchaseOrder | '' = '';
-  sortDirection: 'asc' | 'desc' = 'desc';
+  statsQuery = injectQuery(() => ({
+    queryKey: ['purchase-orders-stats'],
+    queryFn: async () => {
+      // Fetch all for stats
+      return lastValueFrom(this.purchaseOrderService.getPurchaseOrders(0, 999999, 'name desc'));
+    }
+  }));
+
+  // Derived State
+  totalRecords = computed(() => this.countQuery.data()?.message || 0);
+  orders = computed(() => this.dataQuery.data()?.data || []);
+  loading = computed(() => this.dataQuery.isPending());
+  error = computed(() => this.dataQuery.error());
+
+  // Statistics Derived State
+  stats = computed(() => {
+    const allOrders = this.statsQuery.data()?.data || [];
+    return {
+      total: allOrders.length,
+      toBill: allOrders.filter((o: any) => o.status === 'To Bill').length,
+      completed: allOrders.filter((o: any) => o.status === 'Completed').length,
+      draft: allOrders.filter((o: any) => o.status === 'Draft').length,
+      toReceiveAndBill: allOrders.filter((o: any) => o.status === 'To Receive and Bill').length
+    };
+  });
+  statsLoading = computed(() => this.statsQuery.isPending());
 
   // Charts
   monthlyChart!: Partial<ApexOptions>;
@@ -58,8 +95,7 @@ export class Purchaseorder implements OnInit {
   }
 
   ngOnInit(): void {
-    this.loadPurchaseOrders();
-    this.loadStatistics();
+    // Queries execute automatically
   }
 
   initializeCharts(): void {
@@ -136,136 +172,50 @@ export class Purchaseorder implements OnInit {
     };
   }
 
-  /**
-   * Load purchase order statistics from ERPNext API
-   */
-  loadStatistics(): void {
-    this.statsLoading = true;
-
-    // Fetch all purchase orders with just name and status fields for counting
-    const fields = JSON.stringify(['name', 'status']);
-    const url = `limit_start=0&limit_page_length=999999`; // Get all records for statistics
-
-    this.purchaseOrderService.getPurchaseOrders(0, 999999, 'name desc').subscribe({
-      next: (response) => {
-        const allOrders = response.data || [];
-        
-        // Calculate statistics
-        this.stats.total = allOrders.length;
-        this.stats.completed = allOrders.filter((o: any) => o.status === 'Completed').length;
-        this.stats.toBill = allOrders.filter((o: any) => o.status === 'To Bill').length;
-        this.stats.draft = allOrders.filter((o: any) => o.status === 'Draft').length;
-        this.stats.toReceiveAndBill = allOrders.filter((o: any) => o.status === 'To Receive and Bill').length;
-        
-        this.statsLoading = false;
-      },
-      error: (err) => {
-        console.error('Error loading statistics:', err);
-        this.statsLoading = false;
-        // Keep default values on error
-      }
-    });
-  }
-
-  /**
-   * Load purchase orders from ERPNext API
-   */
-  loadPurchaseOrders(): void {
-    this.loading = true;
-    this.error = null;
-
-    // Calculate pagination offset
-    const limitStart = (this.currentPage - 1) * this.pageSize;
-
-    // Build order_by parameter for ERPNext
-    let orderBy = 'name desc'; // Default sorting
-    if (this.sortColumn) {
-      orderBy = `${this.sortColumn} ${this.sortDirection}`;
-    }
-
-    // Step 1: Get count
-    this.purchaseOrderService.getPurchaseOrdersCount().subscribe({
-      next: (countRes: any) => {
-        this.totalRecords = countRes.message || 0;
-        
-        // Step 2: Fetch paginated data
-        this.purchaseOrderService
-          .getPurchaseOrders(limitStart, this.pageSize, orderBy)
-          .subscribe({
-            next: (response) => {
-              this.orders = response.data || [];
-              this.loading = false;
-            },
-            error: (err) => {
-              console.error('Error loading purchase orders:', err);
-              this.error = 'Failed to load purchase orders. Please try again.';
-              this.loading = false;
-              this.orders = [];
-            }
-          });
-      },
-      error: (err) => {
-        console.error('Failed to get count:', err);
-        // Fallback
-        this.purchaseOrderService
-          .getPurchaseOrders(limitStart, this.pageSize, orderBy)
-          .subscribe({
-            next: (response) => {
-              this.orders = response.data || [];
-              this.loading = false;
-            },
-            error: (e) => this.loading = false
-          });
-      }
-    });
-  }
-
   get totalPages(): number {
-    return Math.ceil(this.totalRecords / this.pageSize);
+    return Math.ceil(this.totalRecords() / this.pageSize());
   }
 
   get paginatedOrders(): PurchaseOrder[] {
-    // Since we're fetching paginated data from API, just return all orders
-    return this.orders;
+    return this.orders();
   }
 
   /**
    * Change sorting column and direction
-   * Triggers API call with new sorting parameters
    */
   changeSort(column: keyof PurchaseOrder): void {
-    if (this.sortColumn === column) {
-      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    if (this.sortColumn() === column) {
+      this.sortDirection.update(d => d === 'asc' ? 'desc' : 'asc');
     } else {
-      this.sortColumn = column;
-      this.sortDirection = 'asc';
+      this.sortColumn.set(column);
+      this.sortDirection.set('asc');
     }
-
-    // Reset to first page when sorting changes
-    this.currentPage = 1;
-
-    // Reload data with new sorting
-    this.loadPurchaseOrders();
+    // Reset to first page
+    this.currentPage.set(1);
   }
 
   /**
    * Change current page
-   * Triggers API call with new pagination parameters
    */
   changePage(page: number): void {
     if (page < 1 || page > this.totalPages) {
       return;
     }
     
-    this.currentPage = page;
-    this.loadPurchaseOrders();
+    this.currentPage.set(page);
   }
 
   /**
    * Handle page size change
    */
   onPageSizeChange(): void {
-    this.currentPage = 1;
-    this.loadPurchaseOrders();
+    this.currentPage.set(1);
+  }
+  
+  refreshList() {
+    this.currentPage.set(1);
+    this.dataQuery.refetch();
+    this.countQuery.refetch();
+    this.statsQuery.refetch();
   }
 }

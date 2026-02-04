@@ -18,7 +18,7 @@
         </div>
 
         <div class="text">
-          <h2 class="text-white">{{ stats.total }}</h2>
+          <h2 class="text-white">{{ stats().total }}</h2>
           <p>Total Purchase Orders</p>
         </div>
       </div>
@@ -37,7 +37,7 @@
         </div>
 
         <div class="text">
-          <h2 class="text-black">{{ stats.toBill }} <span class="text-black">to Bill</span></h2>
+          <h2 class="text-black">{{ stats().toBill }} <span class="text-black">to Bill</span></h2>
           <p class="text-black">Marked as To Bill</p>
         </div>
       </div>
@@ -55,7 +55,7 @@
         </div>
 
         <div class="text">
-         <h2 class="text-black">{{ stats.completed }} <span class="text-black">Completed</span></h2>
+         <h2 class="text-black">{{ stats().completed }} <span class="text-black">Completed</span></h2>
           <p class="text-black">Closed & billed</p>
         </div>
       </div>
@@ -78,37 +78,37 @@
 
           <div class="mb-3">
             <div class="d-flex justify-content-between">
-              <small>Draft</small><small>{{ stats.draft }}</small>
+              <small>Draft</small><small>{{ stats().draft }}</small>
             </div>
             <div class="progress">
-              <div class="progress-bar bg-primary" [style.width.%]="stats.total > 0 ? (stats.draft / stats.total * 100) : 0"></div>
+              <div class="progress-bar bg-primary" [style.width.%]="stats().total > 0 ? (stats().draft / stats().total * 100) : 0"></div>
             </div>
           </div>
 
           <div class="mb-3">
             <div class="d-flex justify-content-between">
-              <small>Completed</small><small>{{ stats.completed }}</small>
+              <small>Completed</small><small>{{ stats().completed }}</small>
             </div>
             <div class="progress">
-              <div class="progress-bar bg-success" [style.width.%]="stats.total > 0 ? (stats.completed / stats.total * 100) : 0"></div>
+              <div class="progress-bar bg-success" [style.width.%]="stats().total > 0 ? (stats().completed / stats().total * 100) : 0"></div>
             </div>
           </div>
 
           <div class="mb-3">
             <div class="d-flex justify-content-between">
-              <small>To Bill</small><small>{{ stats.toBill }}</small>
+              <small>To Bill</small><small>{{ stats().toBill }}</small>
             </div>
             <div class="progress">
-              <div class="progress-bar bg-warning" [style.width.%]="stats.total > 0 ? (stats.toBill / stats.total * 100) : 0"></div>
+              <div class="progress-bar bg-warning" [style.width.%]="stats().total > 0 ? (stats().toBill / stats().total * 100) : 0"></div>
             </div>
           </div>
 
           <div>
             <div class="d-flex justify-content-between">
-              <small>To Receive & Bill</small><small>{{ stats.toReceiveAndBill }}</small>
+              <small>To Receive & Bill</small><small>{{ stats().toReceiveAndBill }}</small>
             </div>
             <div class="progress">
-              <div class="progress-bar bg-info" [style.width.%]="stats.total > 0 ? (stats.toReceiveAndBill / stats.total * 100) : 0"></div>
+              <div class="progress-bar bg-info" [style.width.%]="stats().total > 0 ? (stats().toReceiveAndBill / stats().total * 100) : 0"></div>
             </div>
           </div>
 
@@ -159,13 +159,17 @@
     <div class="d-flex justify-content-between mb-3">
       <h6 class="text-uppercase fw-semibold text-muted mb-3" routerLink="/purchaseOrderDetails">Purchase Orders</h6>
 
+      <div class="d-flex gap-2">
       <select class="form-select form-select-sm w-auto"
-              [(ngModel)]="pageSize"
+              [ngModel]="pageSize()"
+              (ngModelChange)="pageSize.set($event)"
               (change)="onPageSizeChange()">
         <option [value]="5">5</option>
         <option [value]="10">10</option>
         <option [value]="20">20</option>
       </select>
+      <button class="btn btn-sm btn-outline-primary" (click)="refreshList()">Refresh</button>
+      </div>
     </div>
 
     <div class="table-responsive">
@@ -174,33 +178,33 @@
           <tr>
             <th (click)="changeSort('name')" class="sortable">
               PO Number
-              <span *ngIf="sortColumn === 'name'">
-                {{ sortDirection === 'asc' ? '▲' : '▼' }}
+              <span *ngIf="sortColumn() === 'name'">
+                {{ sortDirection() === 'asc' ? '▲' : '▼' }}
               </span>
             </th>
 
             <th (click)="changeSort('status')" class="sortable">
               Status
-              <span *ngIf="sortColumn === 'status'">
-                {{ sortDirection === 'asc' ? '▲' : '▼' }}
+              <span *ngIf="sortColumn() === 'status'">
+                {{ sortDirection() === 'asc' ? '▲' : '▼' }}
               </span>
             </th>
             <th (click)="changeSort('supplier')" class="sortable">
               Supplier
-              <span *ngIf="sortColumn === 'supplier'">
-                {{ sortDirection === 'asc' ? '▲' : '▼' }}
+              <span *ngIf="sortColumn() === 'supplier'">
+                {{ sortDirection() === 'asc' ? '▲' : '▼' }}
               </span>
             </th>
             <th (click)="changeSort('transaction_date')" class="sortable">
               Date
-              <span *ngIf="sortColumn === 'transaction_date'">
-                {{ sortDirection === 'asc' ? '▲' : '▼' }}
+              <span *ngIf="sortColumn() === 'transaction_date'">
+                {{ sortDirection() === 'asc' ? '▲' : '▼' }}
               </span>
             </th>
             <th (click)="changeSort('grand_total')" class="sortable">
               Total
-              <span *ngIf="sortColumn === 'grand_total'">
-                {{ sortDirection === 'asc' ? '▲' : '▼' }}
+              <span *ngIf="sortColumn() === 'grand_total'">
+                {{ sortDirection() === 'asc' ? '▲' : '▼' }}
               </span>
             </th>
             <th>Company</th>
@@ -208,24 +212,24 @@
         </thead>
 
         <tbody>
-          <tr *ngIf="loading">
+          <tr *ngIf="loading()">
             <td colspan="6" class="text-center py-4">
               <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
               </div>
             </td>
           </tr>
-          <tr *ngIf="error && !loading">
+          <tr *ngIf="error() && !loading()">
             <td colspan="6" class="text-center text-danger py-4">
-              {{ error }}
+              {{ error() }}
             </td>
           </tr>
-          <tr *ngIf="!loading && !error && orders.length === 0">
+          <tr *ngIf="!loading() && !error() && orders().length === 0">
             <td colspan="6" class="text-center text-muted py-4">
               No purchase orders found.
             </td>
           </tr>
-          <tr *ngFor="let row of paginatedOrders" [hidden]="loading || error">
+          <tr *ngFor="let row of paginatedOrders" [hidden]="loading() || error()">
             <td class="text-primary fw-semibold">
                  <a
     class="text-red text-decoration-none"
@@ -255,24 +259,24 @@
     </div>
 
     <!-- pagination -->
-    <nav>
+    <nav *ngIf="totalRecords() > 0">
       <ul class="pagination justify-content-end mb-0">
         <li class="page-item"
-            [class.disabled]="currentPage === 1">
-          <a class="page-link" (click)="changePage(currentPage - 1)">‹</a>
+            [class.disabled]="currentPage() === 1">
+          <a class="page-link" (click)="changePage(currentPage() - 1)">‹</a>
         </li>
 
         <li class="page-item"
             *ngFor="let p of [].constructor(totalPages); let i = index"
-            [class.active]="currentPage === i + 1">
+            [class.active]="currentPage() === i + 1">
           <a class="page-link" (click)="changePage(i + 1)">
             {{ i + 1 }}
           </a>
         </li>
 
         <li class="page-item"
-            [class.disabled]="currentPage === totalPages">
-          <a class="page-link" (click)="changePage(currentPage + 1)">›</a>
+            [class.disabled]="currentPage() === totalPages">
+          <a class="page-link" (click)="changePage(currentPage() + 1)">›</a>
         </li>
       </ul>
     </nav>

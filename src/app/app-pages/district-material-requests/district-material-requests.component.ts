@@ -1,10 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal, computed, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MaterialService } from 'src/app/services/material.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { UserService } from 'src/app/services/user-service';
 import { Router } from '@angular/router';
+import { injectQuery, keepPreviousData } from '@tanstack/angular-query-experimental';
+import { lastValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
 interface MaterialRequestItem {
@@ -35,19 +37,58 @@ interface MaterialRequestData {
   styleUrl: './district-material-requests.component.scss'
 })
 export class DistrictMaterialRequestsComponent implements OnInit {
-  materialRequests: MaterialRequestData[] = [];
-  loading = false;
-  user: any = null;
-  userDistrict: string = '';
-
+  // Signals
+  user = signal<any>(null);
+  userDistrict = signal<string>('');
+  
   // Pagination
-  pageSize = 10;
-  currentPage = 1;
-  totalRecords = 0;
-
+  pageSize = signal(10);
+  currentPage = signal(1);
+  
   // Sorting
-  sortColumn: string = 'name';
-  sortDirection: 'asc' | 'desc' = 'desc';
+  sortColumn = signal('name');
+  sortDirection = signal<'asc' | 'desc'>('desc');
+
+  // Computed Filters
+  private filters = computed(() => {
+    const dist = this.userDistrict();
+    if (!dist) return null;
+    return [['custom_district', '=', dist]];
+  });
+
+  // Queries
+  countQuery = injectQuery(() => ({
+    queryKey: ['district-material-requests-count', this.filters()],
+    queryFn: async () => {
+      const f = this.filters();
+      if (!f) return { message: 0 };
+      return lastValueFrom(this.materialService.getMaterialRequestsCount(f));
+    },
+    enabled: !!this.filters()
+  }));
+
+  dataQuery = injectQuery(() => ({
+    queryKey: ['district-material-requests', this.filters(), this.currentPage(), this.pageSize(), this.sortColumn(), this.sortDirection()],
+    queryFn: async () => {
+      const f = this.filters();
+      if (!f) return { data: [] };
+      return lastValueFrom(
+        this.materialService.getMaterialRequests(
+          f, 
+          (this.currentPage() - 1) * this.pageSize(), 
+          this.pageSize(), 
+          `${this.sortColumn()} ${this.sortDirection()}`
+        )
+      );
+    },
+    enabled: !!this.filters(),
+    placeholderData: keepPreviousData
+  }));
+
+  // Derived State
+  totalRecords = computed(() => this.countQuery.data()?.message || 0);
+  materialRequests = computed(() => this.dataQuery.data()?.data || []);
+  loading = computed(() => this.dataQuery.isPending());
 
   constructor(
     private materialService: MaterialService,
@@ -71,7 +112,7 @@ export class DistrictMaterialRequestsComponent implements OnInit {
     }
 
     this.loadUserSession();
-    this.loadDistrictMaterialRequests();
+    this.loadUserSession();
   }
 
   loadUserSession() {
@@ -81,65 +122,17 @@ export class DistrictMaterialRequestsComponent implements OnInit {
         if (userEmail) {
           this.authService.getUserDetails(userEmail).subscribe({
             next: (userRes) => {
-              this.user = userRes.data;
+              this.user.set(userRes.data);
               // Extract user's district if available
-              this.userDistrict = this.user?.custom_district || this.user?.district || '';
-              console.log('User district:', this.userDistrict);
-              // Reload requests after getting user district
-              if (this.userDistrict) {
-                this.loadDistrictMaterialRequests();
-              }
+              const dist = this.user()?.custom_district || this.user()?.district || '';
+              this.userDistrict.set(dist);
+              console.log('User district:', dist);
             },
             error: (err) => console.error('Failed to fetch user details', err)
           });
         }
       },
       error: (err) => console.error('Failed to get logged in user', err)
-    });
-  }
-
-  loadDistrictMaterialRequests() {
-    this.loading = true;
-    
-    // Calculate pagination offset
-    const limitStart = (this.currentPage - 1) * this.pageSize;
-
-    // Build order_by parameter
-    const orderBy = `${this.sortColumn} ${this.sortDirection}`;
-    
-    // Filters
-    const filters: any[] = [];
-    if (this.userDistrict) {
-      filters.push(['custom_district', '=', this.userDistrict]);
-    }
-    
-    // Step 1: Get count
-    this.materialService.getMaterialRequestsCount(filters).subscribe({
-      next: (countRes: any) => {
-        this.totalRecords = countRes.message || 0;
-        
-        // Step 2: Fetch paginated data
-        this.materialService.getMaterialRequests(filters, limitStart, this.pageSize, orderBy).subscribe({
-          next: (res: any) => {
-            this.materialRequests = res.data || [];
-            this.loading = false;
-            console.log('District material requests loaded:', this.materialRequests);
-          },
-          error: (err) => {
-            console.error('Failed to load material requests', err);
-            this.loading = false;
-            Swal.fire({
-              icon: 'error',
-              title: 'Load Failed',
-              text: 'Could not load district material requests. Please try again.'
-            });
-          }
-        });
-      },
-      error: (err) => {
-        console.error('Failed to get count', err);
-        this.loading = false;
-      }
     });
   }
 
@@ -159,42 +152,13 @@ export class DistrictMaterialRequestsComponent implements OnInit {
           next: (response) => {
             console.log('Material request approved:', response);
             
-            // Fetch the updated request to get the actual workflow_state
-            this.materialService.getMaterialRequestById(request.name).subscribe({
-              next: (updatedReq) => {
-                console.log('Updated request data:', updatedReq);
-                
-                // Update the local list with the latest data
-                const reqIndex = this.materialRequests.findIndex(r => r.name === request.name);
-                if (reqIndex !== -1 && updatedReq.data) {
-                  this.materialRequests[reqIndex].status = updatedReq.data.status;
-                  this.materialRequests[reqIndex].workflow_state = updatedReq.data.workflow_state;
-                  console.log('Updated workflow_state to:', updatedReq.data.workflow_state);
-                }
-                
-                Swal.fire({
-                  icon: 'success',
-                  title: 'Approved!',
-                  text: `Material Request ${request.name} has been approved successfully.`,
-                  confirmButtonColor: '#0d6efd'
-                });
-              },
-              error: (fetchErr) => {
-                console.error('Failed to fetch updated request:', fetchErr);
-                // Still show success but use optimistic update
-                const reqIndex = this.materialRequests.findIndex(r => r.name === request.name);
-                if (reqIndex !== -1) {
-                  this.materialRequests[reqIndex].status = 'Submitted';
-                  this.materialRequests[reqIndex].workflow_state = 'Approved';
-                }
-                
-                Swal.fire({
-                  icon: 'success',
-                  title: 'Approved!',
-                  text: `Material Request ${request.name} has been approved successfully.`,
-                  confirmButtonColor: '#0d6efd'
-                });
-              }
+            Swal.fire({
+              icon: 'success',
+              title: 'Approved!',
+              text: `Material Request ${request.name} has been approved successfully.`,
+              confirmButtonColor: '#0d6efd'
+            }).then(() => {
+                this.dataQuery.refetch();
             });
           },
           error: (err) => {
@@ -234,13 +198,6 @@ export class DistrictMaterialRequestsComponent implements OnInit {
           next: (response) => {
             console.log('Material request rejected:', response);
             
-            // Immediately update the local status for instant feedback
-            const reqIndex = this.materialRequests.findIndex(r => r.name === request.name);
-            if (reqIndex !== -1) {
-              this.materialRequests[reqIndex].status = 'Cancelled';
-              this.materialRequests[reqIndex].workflow_state = 'Rejected';
-            }
-            
             Swal.fire({
               icon: 'success',
               title: 'Rejected!',
@@ -248,10 +205,8 @@ export class DistrictMaterialRequestsComponent implements OnInit {
               confirmButtonColor: '#0d6efd'
             });
             
-            // Refresh the list after a short delay
-            setTimeout(() => {
-              this.loadDistrictMaterialRequests();
-            }, 1000);
+            // Refresh the list
+            this.dataQuery.refetch();
           },
           error: (err) => {
             console.error('Rejection failed:', err);
@@ -276,13 +231,13 @@ export class DistrictMaterialRequestsComponent implements OnInit {
     const statusMap: { [key: string]: string } = {
       // Workflow States
       'Draft': 'bg-secondary',
-      'Pending': 'bg-warning text-dark',
-      'Pending Approval': 'bg-warning text-dark',
+      'Pending': 'bg-warning text-black',
+      'Pending Approval': 'bg-warning text-black',
       'Approved': 'bg-success',
       'Rejected': 'bg-danger',
       'Cancelled': 'bg-danger',
       // Document Status
-      'Submitted': 'bg-primary',
+      'Submitted': 'bg-info text-dark',
       'Stopped': 'bg-dark'
     };
     return statusMap[status] || 'bg-secondary';
@@ -296,30 +251,28 @@ export class DistrictMaterialRequestsComponent implements OnInit {
   }
 
   refreshList() {
-    this.currentPage = 1;
-    this.loadDistrictMaterialRequests();
+    this.currentPage.set(1);
+    this.dataQuery.refetch();
+    this.countQuery.refetch();
   }
   
   /**
    * Computed property for total pages
    */
   get totalPages(): number {
-    return Math.ceil(this.totalRecords / this.pageSize);
+    return Math.ceil(this.totalRecords() / this.pageSize());
   }
 
   /**
    * Change sorting column and direction
    */
   changeSort(column: string): void {
-    if (this.sortColumn === column) {
-      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    if (this.sortColumn() === column) {
+      this.sortDirection.update(d => d === 'asc' ? 'desc' : 'asc');
     } else {
-      this.sortColumn = column;
-      this.sortDirection = 'asc';
+      this.sortColumn.set(column);
+      this.sortDirection.set('asc');
     }
-
-    // Reload data with new sorting
-    this.loadDistrictMaterialRequests();
   }
 
   /**
@@ -330,16 +283,14 @@ export class DistrictMaterialRequestsComponent implements OnInit {
       return;
     }
     
-    this.currentPage = page;
-    this.loadDistrictMaterialRequests();
+    this.currentPage.set(page);
   }
 
   /**
    * Handle page size change
    */
   onPageSizeChange(): void {
-    this.currentPage = 1;
-    this.loadDistrictMaterialRequests();
+    this.currentPage.set(1);
   }
 
 

@@ -26,6 +26,7 @@
     "@angular/router": "20.0.5",
     "@ng-bootstrap/ng-bootstrap": "19.0.0",
     "@popperjs/core": "2.11.8",
+    "@tanstack/angular-query-experimental": "^5.90.25",
     "apexcharts": "4.7.0",
     "bootstrap": "5.3.7",
     "hammerjs": "2.0.8",

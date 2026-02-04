@@ -46,7 +46,8 @@
           <h5 class="mb-0">My Requests</h5>
           <div class="d-flex gap-2 align-items-center">
             <select class="form-select form-select-sm" style="width: auto;"
-                    [(ngModel)]="pageSize"
+                    [ngModel]="pageSize()"
+                    (ngModelChange)="pageSize.set($event)"
                     (change)="onPageSizeChange()">
               <option [value]="5">5 per page</option>
               <option [value]="10">10 per page</option>
@@ -59,14 +60,14 @@
         </div>
       </div>
       <div class="card-body">
-        @if (loading) {
+        @if (loading()) {
           <div class="text-center py-5">
             <div class="spinner-border text-primary" role="status">
               <span class="visually-hidden">Loading...</span>
             </div>
             <p class="mt-3 text-muted">Loading your material requests...</p>
           </div>
-        } @else if (materialRequests.length === 0) {
+        } @else if (materialRequests().length === 0) {
           <div class="text-center py-5">
             <i class="feather icon-inbox display-4 text-muted mb-3"></i>
             <h5 class="text-muted">No material requests found</h5>
@@ -82,14 +83,14 @@
                 <tr>
                   <th (click)="changeSort('name')" style="cursor: pointer;">
                     Request ID
-                    <span *ngIf="sortColumn === 'name'">
-                      {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                    <span *ngIf="sortColumn() === 'name'">
+                      {{ sortDirection() === 'asc' ? '▲' : '▼' }}
                     </span>
                   </th>
                   <th (click)="changeSort('transaction_date')" style="cursor: pointer;">
                     Date
-                    <span *ngIf="sortColumn === 'transaction_date'">
-                      {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                    <span *ngIf="sortColumn() === 'transaction_date'">
+                      {{ sortDirection() === 'asc' ? '▲' : '▼' }}
                     </span>
                   </th>
                   <th>Type</th>
@@ -98,15 +99,15 @@
                   <th>Items</th>
                   <th (click)="changeSort('status')" style="cursor: pointer;">
                     Status
-                    <span *ngIf="sortColumn === 'status'">
-                      {{ sortDirection === 'asc' ? '▲' : '▼' }}
+                    <span *ngIf="sortColumn() === 'status'">
+                      {{ sortDirection() === 'asc' ? '▲' : '▼' }}
                     </span>
                   </th>
                   <th class="text-center">Actions</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let request of materialRequests">
+                <tr *ngFor="let request of materialRequests()">
                   <td>
                     <strong class="text-primary" style="cursor: pointer;" (click)="viewRequestInForm(request)">{{ request.name }}</strong>
                   </td>
@@ -115,10 +116,10 @@
                   <td>{{ request.company }}</td>
                   <td>{{ request.custom_district || '-' }}</td>
                   <td>
-                    <span class="badge bg-info">{{ getItemsSummary(request.items) }}</span>
+                    <span class="badge bg-info text-dark">{{ getItemsSummary(request.items) }}</span>
                   </td>
                   <td>
-                    <span class="badge" [ngClass]="getStatusBadgeClass(getDisplayStatus(request))">
+                    <span class="badge text-dark" [ngClass]="getStatusBadgeClass(getDisplayStatus(request)) ">
                       {{ getDisplayStatus(request) }}
                     </span>
                   </td>
@@ -133,22 +134,22 @@
           </div>
 
           <!-- Pagination Controls -->
-          <nav *ngIf="totalRecords > 0" class="mt-3">
+          <nav *ngIf="totalRecords() > 0" class="mt-3">
             <ul class="pagination justify-content-end mb-0">
-              <li class="page-item" [class.disabled]="currentPage === 1">
-                <a class="page-link" (click)="changePage(currentPage - 1)" style="cursor: pointer;">‹</a>
+              <li class="page-item" [class.disabled]="currentPage() === 1">
+                <a class="page-link" (click)="changePage(currentPage() - 1)" style="cursor: pointer;">‹</a>
               </li>
 
               <li class="page-item"
                   *ngFor="let p of [].constructor(totalPages); let i = index"
-                  [class.active]="currentPage === i + 1">
+                  [class.active]="currentPage() === i + 1">
                 <a class="page-link" (click)="changePage(i + 1)" style="cursor: pointer;">
                   {{ i + 1 }}
                 </a>
               </li>
 
-              <li class="page-item" [class.disabled]="currentPage === totalPages">
-                <a class="page-link" (click)="changePage(currentPage + 1)" style="cursor: pointer;">›</a>
+              <li class="page-item" [class.disabled]="currentPage() === totalPages">
+                <a class="page-link" (click)="changePage(currentPage() + 1)" style="cursor: pointer;">›</a>
               </li>
             </ul>
           </nav>

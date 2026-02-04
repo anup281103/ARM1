@@ -1,10 +1,12 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal, computed, inject, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink, Router } from '@angular/router';
 import { MaterialService } from 'src/app/services/material.service';
 import { AuthService } from 'src/app/services/auth.service';
 import { UserService } from 'src/app/services/user-service';
+import { injectQuery, keepPreviousData } from '@tanstack/angular-query-experimental';
+import { lastValueFrom } from 'rxjs';
 import Swal from 'sweetalert2';
 
 interface MaterialRequestItem {
@@ -35,18 +37,57 @@ interface MaterialRequestData {
   styleUrl: './my-material-requests.component.scss'
 })
 export class MyMaterialRequestsComponent implements OnInit {
-  materialRequests: MaterialRequestData[] = [];
-  loading = false;
-  user: any = null;
+  // Signals for state
+  user = signal<any>(null);
+  
+  // Pagination Signals
+  pageSize = signal(10);
+  currentPage = signal(1);
+  
+  // Sorting Signals
+  sortColumn = signal('name');
+  sortDirection = signal<'asc' | 'desc'>('desc');
 
-  // Pagination
-  pageSize = 10;
-  currentPage = 1;
-  totalRecords = 0;
+  // Computed Filters
+  private filters = computed(() => {
+    const u = this.user();
+    if (!u) return null;
+    return [['owner', '=', u.email || u.name]];
+  });
 
-  // Sorting
-  sortColumn: string = 'name';
-  sortDirection: 'asc' | 'desc' = 'desc';
+  // Queries
+  countQuery = injectQuery(() => ({
+    queryKey: ['material-requests-count', this.filters()],
+    queryFn: async () => {
+      const f = this.filters();
+      if (!f) return { message: 0 };
+      return lastValueFrom(this.materialService.getMaterialRequestsCount(f));
+    },
+    enabled: !!this.filters()
+  }));
+
+  dataQuery = injectQuery(() => ({
+    queryKey: ['material-requests', this.filters(), this.currentPage(), this.pageSize(), this.sortColumn(), this.sortDirection()],
+    queryFn: async () => {
+      const f = this.filters();
+      if (!f) return { data: [] };
+      return lastValueFrom(
+        this.materialService.getMaterialRequests(
+          f, 
+          (this.currentPage() - 1) * this.pageSize(), // limitStart
+          this.pageSize(),                            // limitPageLength
+          `${this.sortColumn()} ${this.sortDirection()}` // orderBy
+        )
+      );
+    },
+    enabled: !!this.filters(),
+    placeholderData: keepPreviousData
+  }));
+
+  // Derived State
+  totalRecords = computed(() => this.countQuery.data()?.message || 0);
+  materialRequests = computed(() => this.dataQuery.data()?.data || []);
+  loading = computed(() => this.dataQuery.isPending());
 
   constructor(
     private materialService: MaterialService,
@@ -79,116 +120,27 @@ export class MyMaterialRequestsComponent implements OnInit {
         if (userEmail) {
           this.authService.getUserDetails(userEmail).subscribe({
             next: (userRes) => {
-              this.user = userRes.data;
-              // Load requests AFTER user is loaded
-              this.loadMyMaterialRequests();
+              // Update Signal
+              this.user.set(userRes.data);
             },
             error: (err) => {
               console.error('Failed to fetch user details', err);
-              // Still try to load requests using userService
-              this.loadMyMaterialRequests();
+              // Fallback
+              const currentUser = this.userService.getUser();
+              if (currentUser) this.user.set(currentUser);
             }
           });
         } else {
-          // No user email, try loading with userService
-          this.loadMyMaterialRequests();
+          const currentUser = this.userService.getUser();
+           if (currentUser) this.user.set(currentUser);
         }
       },
       error: (err) => {
         console.error('Failed to get logged in user', err);
-        // Still try to load requests
-        this.loadMyMaterialRequests();
+        const currentUser = this.userService.getUser();
+        if (currentUser) this.user.set(currentUser);
       }
     });
-  }
-
-  loadMyMaterialRequests() {
-    this.loading = true;
-    const currentUser = this.user?.email || this.userService.getUser()?.email;
-    
-    if (!currentUser) {
-      this.materialRequests = [];
-      this.loading = false;
-      return;
-    }
-
-    // Calculate pagination offset
-    const limitStart = (this.currentPage - 1) * this.pageSize;
-
-    // Build order_by parameter
-    const orderBy = `${this.sortColumn} ${this.sortDirection}`;
-
-    // Build filters for current user
-    const filters = [['owner', '=', currentUser]];
-    
-    // Step 1: Get total count for pagination
-    this.materialService.getMaterialRequestsCount(filters).subscribe({
-      next: (countRes: any) => {
-        this.totalRecords = countRes.message || 0;
-        
-        // Step 2: Fetch paginated data
-        this.materialService.getMaterialRequests(filters, limitStart, this.pageSize, orderBy).subscribe({
-          next: (res: any) => {
-            this.materialRequests = res.data || [];
-            this.loading = false;
-            console.log('My material requests loaded:', this.materialRequests);
-          },
-          error: (err) => {
-            console.error('Failed to load material requests', err);
-            this.loading = false;
-            Swal.fire({
-              icon: 'error',
-              title: 'Load Failed',
-              text: 'Could not load your material requests. Please try again.'
-            });
-          }
-        });
-      },
-      error: (err) => {
-        console.error('Failed to get count', err);
-        // Fallback: try to load data anyway without count
-        this.materialService.getMaterialRequests(filters, limitStart, this.pageSize, orderBy).subscribe({
-          next: (res: any) => {
-             this.materialRequests = res.data || [];
-             this.loading = false;
-          },
-          error: (e) => {
-             this.loading = false;
-          }
-        });
-      }
-    });
-  }
-
-
-
-  getItemsSummary(items: MaterialRequestItem[]): string {
-    if (!items || items.length === 0) return 'No items';
-    if (items.length === 1) return `${items[0].item_code} (${items[0].qty})`;
-    return `${items.length} items`;
-  }
-
-  getStatusBadgeClass(status: string): string {
-    const statusMap: { [key: string]: string } = {
-      // Workflow States
-      'Draft': 'bg-secondary',
-      'Pending': 'bg-warning text-dark',
-      'Pending Approval': 'bg-warning text-dark',
-      'Approved': 'bg-success',
-      'Rejected': 'bg-danger',
-      'Cancelled': 'bg-danger',
-      // Document Status
-      'Submitted': 'bg-primary',
-      'Stopped': 'bg-dark'
-    };
-    return statusMap[status] || 'bg-secondary';
-  }
-  
-  /**
-   * Get the display status - prefer workflow_state over status
-   */
-  getDisplayStatus(request: MaterialRequestData): string {
-    return request.workflow_state || request.status || 'Draft';
   }
 
   viewRequestDetails(request: MaterialRequestData) {
@@ -216,8 +168,9 @@ export class MyMaterialRequestsComponent implements OnInit {
   }
 
   refreshList() {
-    this.currentPage = 1;
-    this.loadMyMaterialRequests();
+    this.currentPage.set(1);
+    this.dataQuery.refetch();
+    this.countQuery.refetch();
   }
   
   /**
@@ -230,23 +183,23 @@ export class MyMaterialRequestsComponent implements OnInit {
   /**
    * Computed property for total pages
    */
+  /**
+   * Computed property for total pages
+   */
   get totalPages(): number {
-    return Math.ceil(this.totalRecords / this.pageSize);
+    return Math.ceil(this.totalRecords() / this.pageSize());
   }
 
   /**
    * Change sorting column and direction
    */
   changeSort(column: string): void {
-    if (this.sortColumn === column) {
-      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    if (this.sortColumn() === column) {
+      this.sortDirection.update(d => d === 'asc' ? 'desc' : 'asc');
     } else {
-      this.sortColumn = column;
-      this.sortDirection = 'asc';
+      this.sortColumn.set(column);
+      this.sortDirection.set('asc');
     }
-
-    // Reload data with new sorting
-    this.loadMyMaterialRequests();
   }
 
   /**
@@ -257,15 +210,45 @@ export class MyMaterialRequestsComponent implements OnInit {
       return;
     }
     
-    this.currentPage = page;
-    this.loadMyMaterialRequests();
+    this.currentPage.set(page);
   }
 
   /**
    * Handle page size change
    */
   onPageSizeChange(): void {
-    this.currentPage = 1;
-    this.loadMyMaterialRequests();
+    this.currentPage.set(1);
+  }
+  /**
+   * Get items summary string
+   */
+  getItemsSummary(items: MaterialRequestItem[]): string {
+    if (!items || items.length === 0) return 'No Items';
+    if (items.length === 1) return `${items[0].item_code} (${items[0].qty})`;
+    return `${items[0].item_code} + ${items.length - 1} more`;
+  }
+
+  /**
+   * Get display status considering workflow state
+   */
+  getDisplayStatus(request: MaterialRequestData): string {
+    return request.workflow_state || request.status || 'Draft';
+  }
+
+  /**
+   * Get badge class based on status
+   */
+  getStatusBadgeClass(status: string): string {
+    const statusMap: { [key: string]: string } = {
+      'Draft': 'bg-secondary',
+      'Pending': 'bg-warning text-black',
+      'Pending Approval': 'bg-warning text-black',
+      'Approved': 'bg-success',
+      'Rejected': 'bg-danger',
+      'Cancelled': 'bg-danger',
+      'Submitted': 'bg-info text-dark',
+      'Stopped': 'bg-dark'
+    };
+    return statusMap[status] || 'bg-secondary';
   }
 }
