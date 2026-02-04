@@ -23,6 +23,14 @@ export class MaterialService {
   }
 
   /**
+   * Update an existing Material Request
+   * Endpoint: /api/resource/Material Request/:id
+   */
+  updateMaterialRequest(requestId: string, data: any): Observable<any> {
+    return this.http.put(`${this.baseUrl}/api/resource/Material Request/${requestId}`, data, { withCredentials: true });
+  }
+
+  /**
    * Fetch Items from ERPNext
    * Endpoint: /api/resource/Item
    * You might want to filter or fetch specific fields
@@ -30,7 +38,10 @@ export class MaterialService {
   getItems(): Observable<any> {
     // Fetching Item Code and Item Name with pagination to get all records
     const fields = JSON.stringify(["item_code", "item_name", "stock_uom"]);
-    return this.http.get(`${this.baseUrl}/api/resource/Item?fields=${fields}&limit_page_length=500`, { withCredentials: true });
+    return this.http.get(`${this.baseUrl}/api/resource/Item
+?fields=${fields}
+&filters=[["disabled","=",0]]
+&limit_page_length=500`, { withCredentials: true });
   }
 
   /**
@@ -67,7 +78,7 @@ export class MaterialService {
    * Fetch Material Requests for approval
    * Filter by status if needed (e.g., Submitted, Pending)
    */
-  getMaterialRequests(filters?: any, limitStart: number = 0, limitPageLength: number = 500): Observable<any> {
+  getMaterialRequests(filters?: any, limitStart: number = 0, limitPageLength: number = 20, orderBy: string = 'creation desc'): Observable<any> {
     const fields = JSON.stringify([
       "name", 
       "transaction_date", 
@@ -82,7 +93,7 @@ export class MaterialService {
     ]);
     
     // Build URL with pagination - use high limit to get all records
-    let url = `${this.baseUrl}/api/resource/Material Request?fields=${fields}&limit_start=${limitStart}&limit_page_length=${limitPageLength}&order_by=creation desc`;
+    let url = `${this.baseUrl}/api/resource/Material Request?fields=${fields}&limit_start=${limitStart}&limit_page_length=${limitPageLength}&order_by=${encodeURIComponent(orderBy)}`;
     
     if (filters) {
       const filterStr = JSON.stringify(filters);
@@ -90,6 +101,21 @@ export class MaterialService {
     }
     
     return this.http.get(url, { withCredentials: true });
+  }
+
+  /**
+   * Get total count of Material Requests matching the filters
+   */
+  getMaterialRequestsCount(filters?: any): Observable<any> {
+    const filtersParam = filters ? JSON.stringify(filters) : '[]';
+    return this.http.post(
+      `${this.baseUrl}/api/method/frappe.client.get_count`,
+      {
+        doctype: 'Material Request',
+        filters: filters
+      },
+      { withCredentials: true }
+    );
   }
   
   /**

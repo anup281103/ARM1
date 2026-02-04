@@ -58,6 +58,10 @@ export class MaterialRequest implements OnInit {
   canCreatePurchaseOrder = false;
   creatingPurchaseOrder = false;
 
+  // Edit properties
+  canEdit = false;
+  updating = false;
+
   // Collector properties
   canApproveOrReject = false;
 
@@ -77,7 +81,8 @@ export class MaterialRequest implements OnInit {
         // View mode
         this.requestId = params['id'];
         this.viewMode = true;
-        this.isReadOnly = true;
+        // Default to read only, will be updated in loadMaterialRequest based on status/owner
+        this.isReadOnly = true; 
         this.loadMaterialRequest(this.requestId);
       } else {
         // Create mode
@@ -344,6 +349,8 @@ export class MaterialRequest implements OnInit {
           this.populateFormFields(this.requestData);
           // Check if user can submit this request to collector
           this.checkSubmissionEligibility();
+          // Check if user can edit this request
+          this.checkEditEligibility();
         }, 300);
       },
       error: (err) => {
@@ -450,6 +457,110 @@ export class MaterialRequest implements OnInit {
     this.canCreatePurchaseOrder = isApproved && isOwner;
     console.log('PO creation eligibility:', { isApproved, isOwner, canCreate: this.canCreatePurchaseOrder });
   }
+
+  /**
+   * Check if current user can edit this request
+   * Conditions: Status is "Draft" and user is the owner
+   */
+  checkEditEligibility() {
+    if (!this.requestData || !this.user) {
+      this.canEdit = false;
+      this.isReadOnly = true;
+      return;
+    }
+    
+    const workflowState = this.requestData?.workflow_state || this.requestData?.status;
+    const isDraft = workflowState === 'Draft';
+    const isOwner = this.requestData?.owner === this.user?.email || this.requestData?.owner === this.user?.name;
+    
+    // Enable editing if Draft AND user is owner
+    this.canEdit = isDraft && isOwner;
+    this.isReadOnly = !this.canEdit;
+    
+    console.log('Edit eligibility:', { isDraft, isOwner, canEdit: this.canEdit });
+  }
+
+  /**
+   * Update existing Material Request
+   */
+  update() {
+    if (!this.isFormValid()) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Missing Information',
+        text: 'Please fill in all required fields (Item, Quantity, Warehouse, Company, District)'
+      });
+      return;
+    }
+    
+    this.updating = true;
+    
+    const payload = {
+      transaction_date: this.requestDate,
+      material_request_type: this.purpose,
+      schedule_date: this.requiredByDate,
+      company: this.company,
+      custom_district: this.district,
+      items: [
+        {
+          item_code: this.itemCode,
+          qty: this.quantity,
+          warehouse: this.warehouse,
+          schedule_date: this.requiredByDate,
+          description: this.description,
+          uom: 'Nos',
+          // name is required to update existing item row, if we had it. 
+          // Since we are reconstructing, we might need to handle this carefully if multiple items existed.
+          // For single item model (current UI), this effectively replaces the item list.
+          // Ideally we should preserve item IDs if we are updating rows, but for this simple UI:
+        }
+      ]
+    };
+
+    // If we have the item ID from loaded data, include it to update the specific row
+    if (this.requestData && this.requestData.items && this.requestData.items.length > 0) {
+      // Assuming we are still only editing the first item as per UI limitation
+      (payload.items[0] as any)['name'] = this.requestData.items[0].name; 
+    }
+
+    console.log('Updating Material Request:', payload);
+
+    this.materialService.updateMaterialRequest(this.requestId, payload).subscribe({
+      next: (response) => {
+        console.log('Material Request Updated:', response);
+        this.updating = false;
+        
+        // Reload to refresh state
+        this.loadMaterialRequest(this.requestId);
+        
+        Swal.fire({
+          icon: 'success',
+          title: 'Request Updated!',
+          text: 'Your changes have been saved.',
+          confirmButtonColor: '#0d6efd',
+          timer: 2000
+        });
+      },
+      error: (err) => {
+        console.error('Update Failed:', err);
+        this.updating = false;
+        
+        let errorMsg = 'Could not update request.';
+        if (err.error && err.error._server_messages) {
+          try {
+            const messages = JSON.parse(err.error._server_messages);
+            errorMsg = JSON.parse(messages[0]).message;
+          } catch (e) {}
+        }
+        
+        Swal.fire({
+          icon: 'error',
+          title: 'Update Failed',
+          text: errorMsg
+        });
+      }
+    });
+  }
   
   /**
    * Submit material request to collector via workflow
@@ -457,7 +568,7 @@ export class MaterialRequest implements OnInit {
   submitToCollector() {
     Swal.fire({
       title: 'Submit to Collector?',
-      html: `Submit Material Request <b>${this.requestData.name}</b> for approval?`,
+      html: `Submit Material Request <b>${this.requestData.name}</b> for approval?<br><small class="text-muted">This will save any unsaved changes.</small>`,
       icon: 'question',
       showCancelButton: true,
       confirmButtonColor: '#0d6efd',
@@ -467,48 +578,92 @@ export class MaterialRequest implements OnInit {
     }).then((result) => {
       if (result.isConfirmed) {
         this.submittingWorkflow = true;
-        
-        this.materialService.applyWorkflow(this.requestData.name, 'Submit').subscribe({
-          next: (response) => {
-            console.log('Workflow applied:', response);
-            
-            // Reload request to get updated workflow state
-            this.materialService.getMaterialRequestById(this.requestData.name).subscribe({
-              next: (updated) => {
-                this.requestData = updated.data;
-                this.submittingWorkflow = false;
-                this.canSubmitToCollector = false; // Hide button after submit
+
+        // Step 1: Update the request first to save current form values
+        const payload = {
+          transaction_date: this.requestDate,
+          material_request_type: this.purpose,
+          schedule_date: this.requiredByDate,
+          company: this.company,
+          custom_district: this.district,
+          items: [
+            {
+              item_code: this.itemCode,
+              qty: this.quantity,
+              warehouse: this.warehouse,
+              schedule_date: this.requiredByDate,
+              description: this.description,
+              uom: 'Nos',
+            }
+          ]
+        };
+
+        // Preserve item ID if exists
+        if (this.requestData && this.requestData.items && this.requestData.items.length > 0) {
+          (payload.items[0] as any)['name'] = this.requestData.items[0].name; 
+        }
+
+        console.log('Auto-saving before submit:', payload);
+
+        this.materialService.updateMaterialRequest(this.requestId, payload).subscribe({
+          next: (updateRes) => {
+             console.log('Auto-save successful, proceeding to submit...');
+             
+             // Step 2: Apply Workflow
+             this.materialService.applyWorkflow(this.requestData.name, 'Submit').subscribe({
+              next: (response) => {
+                console.log('Workflow applied:', response);
                 
-                const newState = updated.data.workflow_state || updated.data.status;
-                
-                Swal.fire({
-                  icon: 'success',
-                  title: 'Submitted!',
-                  html: `Material Request has been submitted for approval.<br>Status: <span class="badge ${this.getStatusBadgeClass(newState)}">${newState}</span>`,
-                  confirmButtonColor: '#0d6efd'
+                // Reload request to get updated workflow state
+                this.materialService.getMaterialRequestById(this.requestData.name).subscribe({
+                  next: (updated) => {
+                    this.requestData = updated.data;
+                    this.submittingWorkflow = false;
+                    this.canSubmitToCollector = false; // Hide button after submit
+                    this.canEdit = false; // Disable editing after submit
+                    this.isReadOnly = true;
+                    
+                    const newState = updated.data.workflow_state || updated.data.status;
+                    
+                    Swal.fire({
+                      icon: 'success',
+                      title: 'Submitted!',
+                      html: `Material Request has been submitted for approval.<br>Status: <span class="badge ${this.getStatusBadgeClass(newState)}">${newState}</span>`,
+                      confirmButtonColor: '#0d6efd'
+                    });
+                  },
+                  error: (err) => {
+                    this.submittingWorkflow = false;
+                    console.error('Failed to reload request:', err);
+                    // Still show success since workflow was applied
+                    Swal.fire({
+                      icon: 'success',
+                      title: 'Submitted!',
+                      text: 'Material Request has been submitted for approval.',
+                      confirmButtonColor: '#0d6efd'
+                    });
+                  }
                 });
               },
               error: (err) => {
                 this.submittingWorkflow = false;
-                console.error('Failed to reload request:', err);
-                // Still show success since workflow was applied
+                console.error('Workflow submission failed:', err);
+                
                 Swal.fire({
-                  icon: 'success',
-                  title: 'Submitted!',
-                  text: 'Material Request has been submitted for approval.',
-                  confirmButtonColor: '#0d6efd'
+                  icon: 'error',
+                  title: 'Submission Failed',
+                  text: err?.error?.message || err?.error?.exception || 'Could not submit the request. Please try again.'
                 });
               }
             });
           },
           error: (err) => {
             this.submittingWorkflow = false;
-            console.error('Workflow submission failed:', err);
-            
+            console.error('Auto-save failed:', err);
             Swal.fire({
               icon: 'error',
               title: 'Submission Failed',
-              text: err?.error?.message || err?.error?.exception || 'Could not submit the request. Please try again.'
+              text: 'Could not save changes before submitting. Please try again.'
             });
           }
         });

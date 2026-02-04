@@ -101,44 +101,52 @@ export class MaterialApprovalComponent implements OnInit {
   loadMaterialRequests() {
     this.loading = true;
     
-    this.materialService.getMaterialRequests().subscribe({
-      next: (res: any) => {
-        let allRequests = res.data || [];
+    // Calculate pagination offset
+    const limitStart = (this.currentPage - 1) * this.pageSize;
+
+    // Build order_by parameter
+    const orderBy = `${this.sortColumn} ${this.sortDirection}`;
+    
+    // Filters
+    const filters: any[] = [];
+    if (this.userDistrict) {
+      filters.push(['custom_district', '=', this.userDistrict]);
+    } else {
+       console.warn('No district assigned to collector, loading all requests.');
+    }
+    
+    // Step 1: Get count
+    this.materialService.getMaterialRequestsCount(filters).subscribe({
+      next: (countRes: any) => {
+        this.totalRecords = countRes.message || 0;
         
-        // Filter by collector's district
-        if (this.userDistrict) {
-          this.materialRequests = allRequests.filter(
-            (req: MaterialRequestData) => req.custom_district === this.userDistrict
-          );
-          console.log(`Filtered requests for district "${this.userDistrict}":`, this.materialRequests.length);
-        } else {
-          // If no district assigned, show all (or you can show none)
-          this.materialRequests = allRequests;
-          console.warn('No district assigned to collector, showing all requests');
-        }
-        
-        // Apply sorting
-        const sortedRequests = this.sortData(allRequests);
-        
-        // Calculate total
-        this.totalRecords = sortedRequests.length;
-        
-        // Apply pagination
-        const limitStart = (this.currentPage - 1) * this.pageSize;
-        const start = limitStart;
-        const end = start + this.pageSize;
-        this.materialRequests = sortedRequests.slice(start, end);
-        
-        this.loading = false;
-        console.log('Material requests loaded:', this.materialRequests);
+        // Step 2: Fetch paginated data
+        this.materialService.getMaterialRequests(filters, limitStart, this.pageSize, orderBy).subscribe({
+          next: (res: any) => {
+            this.materialRequests = res.data || [];
+            this.loading = false;
+            console.log('Material requests loaded:', this.materialRequests);
+          },
+          error: (err) => {
+            console.error('Failed to load material requests', err);
+            this.loading = false;
+            Swal.fire({
+              icon: 'error',
+              title: 'Load Failed',
+              text: 'Could not load material requests. Please try again.'
+            });
+          }
+        });
       },
       error: (err) => {
-        console.error('Failed to load material requests', err);
-        this.loading = false;
-        Swal.fire({
-          icon: 'error',
-          title: 'Load Failed',
-          text: 'Could not load material requests. Please try again.'
+        console.error('Failed to get count', err);
+        // Fallback: try to load data anyway without count
+        this.materialService.getMaterialRequests(filters, limitStart, this.pageSize, orderBy).subscribe({
+            next: (res: any) => {
+                this.materialRequests = res.data || [];
+                this.loading = false;
+            },
+            error: (e) => this.loading = false
         });
       }
     });
@@ -352,17 +360,5 @@ export class MaterialApprovalComponent implements OnInit {
     this.loadMaterialRequests();
   }
 
-  /**
-   * Sort data based on current sort column and direction
-   */
-  private sortData(data: MaterialRequestData[]): MaterialRequestData[] {
-    return [...data].sort((a: any, b: any) => {
-      const valueA = a[this.sortColumn];
-      const valueB = b[this.sortColumn];
 
-      if (valueA < valueB) return this.sortDirection === 'asc' ? -1 : 1;
-      if (valueA > valueB) return this.sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
 }

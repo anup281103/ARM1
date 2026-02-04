@@ -121,52 +121,46 @@ export class MyMaterialRequestsComponent implements OnInit {
     // Build filters for current user
     const filters = [['owner', '=', currentUser]];
     
-    // Fetch material requests with pagination and sorting from ERPNext
-    this.materialService.getMaterialRequests(filters).subscribe({
-      next: (res: any) => {
-        // Note: We still get all filtered results, but we'll paginate on client side
-        // For true server-side pagination, we'd need to modify the service to accept limit parameters
-        const allUserRequests = res.data || [];
+    // Step 1: Get total count for pagination
+    this.materialService.getMaterialRequestsCount(filters).subscribe({
+      next: (countRes: any) => {
+        this.totalRecords = countRes.message || 0;
         
-        // Sort the data
-        const sortedRequests = this.sortData(allUserRequests);
-        
-        // Calculate total
-        this.totalRecords = sortedRequests.length;
-        
-        // Apply pagination
-        const start = limitStart;
-        const end = start + this.pageSize;
-        this.materialRequests = sortedRequests.slice(start, end);
-        
-        this.loading = false;
-        console.log('My material requests loaded:', this.materialRequests);
+        // Step 2: Fetch paginated data
+        this.materialService.getMaterialRequests(filters, limitStart, this.pageSize, orderBy).subscribe({
+          next: (res: any) => {
+            this.materialRequests = res.data || [];
+            this.loading = false;
+            console.log('My material requests loaded:', this.materialRequests);
+          },
+          error: (err) => {
+            console.error('Failed to load material requests', err);
+            this.loading = false;
+            Swal.fire({
+              icon: 'error',
+              title: 'Load Failed',
+              text: 'Could not load your material requests. Please try again.'
+            });
+          }
+        });
       },
       error: (err) => {
-        console.error('Failed to load material requests', err);
-        this.loading = false;
-        Swal.fire({
-          icon: 'error',
-          title: 'Load Failed',
-          text: 'Could not load your material requests. Please try again.'
+        console.error('Failed to get count', err);
+        // Fallback: try to load data anyway without count
+        this.materialService.getMaterialRequests(filters, limitStart, this.pageSize, orderBy).subscribe({
+          next: (res: any) => {
+             this.materialRequests = res.data || [];
+             this.loading = false;
+          },
+          error: (e) => {
+             this.loading = false;
+          }
         });
       }
     });
   }
 
-  /**
-   * Sort data based on current sort column and direction
-   */
-  private sortData(data: MaterialRequestData[]): MaterialRequestData[] {
-    return [...data].sort((a: any, b: any) => {
-      const valueA = a[this.sortColumn];
-      const valueB = b[this.sortColumn];
 
-      if (valueA < valueB) return this.sortDirection === 'asc' ? -1 : 1;
-      if (valueA > valueB) return this.sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
 
   getItemsSummary(items: MaterialRequestItem[]): string {
     if (!items || items.length === 0) return 'No items';

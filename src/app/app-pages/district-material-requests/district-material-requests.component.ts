@@ -101,44 +101,44 @@ export class DistrictMaterialRequestsComponent implements OnInit {
   loadDistrictMaterialRequests() {
     this.loading = true;
     
-    // Fetch all material requests
-    this.materialService.getMaterialRequests().subscribe({
-      next: (res: any) => {
-        let allRequests = res.data || [];
+    // Calculate pagination offset
+    const limitStart = (this.currentPage - 1) * this.pageSize;
+
+    // Build order_by parameter
+    const orderBy = `${this.sortColumn} ${this.sortDirection}`;
+    
+    // Filters
+    const filters: any[] = [];
+    if (this.userDistrict) {
+      filters.push(['custom_district', '=', this.userDistrict]);
+    }
+    
+    // Step 1: Get count
+    this.materialService.getMaterialRequestsCount(filters).subscribe({
+      next: (countRes: any) => {
+        this.totalRecords = countRes.message || 0;
         
-        // Filter by district if user has a district assigned
-        if (this.userDistrict) {
-          this.materialRequests = allRequests.filter(
-            (req: MaterialRequestData) => req.custom_district === this.userDistrict
-          );
-        } else {
-          // If no district, show all requests (or you can show none)
-          this.materialRequests = allRequests;
-        }
-        
-        // Apply sorting
-        const sortedRequests = this.sortData(allRequests);
-        
-        // Calculate total
-        this.totalRecords = sortedRequests.length;
-        
-        // Apply pagination
-        const limitStart = (this.currentPage - 1) * this.pageSize;
-        const start = limitStart;
-        const end = start + this.pageSize;
-        this.materialRequests = sortedRequests.slice(start, end);
-        
-        this.loading = false;
-        console.log('District material requests loaded:', this.materialRequests);
+        // Step 2: Fetch paginated data
+        this.materialService.getMaterialRequests(filters, limitStart, this.pageSize, orderBy).subscribe({
+          next: (res: any) => {
+            this.materialRequests = res.data || [];
+            this.loading = false;
+            console.log('District material requests loaded:', this.materialRequests);
+          },
+          error: (err) => {
+            console.error('Failed to load material requests', err);
+            this.loading = false;
+            Swal.fire({
+              icon: 'error',
+              title: 'Load Failed',
+              text: 'Could not load district material requests. Please try again.'
+            });
+          }
+        });
       },
       error: (err) => {
-        console.error('Failed to load material requests', err);
+        console.error('Failed to get count', err);
         this.loading = false;
-        Swal.fire({
-          icon: 'error',
-          title: 'Load Failed',
-          text: 'Could not load district material requests. Please try again.'
-        });
       }
     });
   }
@@ -342,19 +342,7 @@ export class DistrictMaterialRequestsComponent implements OnInit {
     this.loadDistrictMaterialRequests();
   }
 
-  /**
-   * Sort data based on current sort column and direction
-   */
-  private sortData(data: MaterialRequestData[]): MaterialRequestData[] {
-    return [...data].sort((a: any, b: any) => {
-      const valueA = a[this.sortColumn];
-      const valueB = b[this.sortColumn];
 
-      if (valueA < valueB) return this.sortDirection === 'asc' ? -1 : 1;
-      if (valueA > valueB) return this.sortDirection === 'asc' ? 1 : -1;
-      return 0;
-    });
-  }
   
   /**
    * Navigate to view mode for a material request

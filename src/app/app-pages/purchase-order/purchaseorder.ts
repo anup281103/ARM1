@@ -183,31 +183,41 @@ export class Purchaseorder implements OnInit {
       orderBy = `${this.sortColumn} ${this.sortDirection}`;
     }
 
-    this.purchaseOrderService
-      .getPurchaseOrders(limitStart, this.pageSize, orderBy)
-      .subscribe({
-        next: (response) => {
-          this.orders = response.data || [];
-          this.loading = false;
-
-          // ERPNext doesn't return total count in the standard response
-          // If you need accurate total pages, you may need a separate count API call
-          // For now, we'll estimate based on returned data
-          if (response.data && response.data.length === this.pageSize) {
-            // If we got a full page, there might be more
-            this.totalRecords = (this.currentPage * this.pageSize) + 1;
-          } else {
-            // Last page
-            this.totalRecords = (this.currentPage - 1) * this.pageSize + (response.data?.length || 0);
-          }
-        },
-        error: (err) => {
-          console.error('Error loading purchase orders:', err);
-          this.error = 'Failed to load purchase orders. Please try again.';
-          this.loading = false;
-          this.orders = [];
-        }
-      });
+    // Step 1: Get count
+    this.purchaseOrderService.getPurchaseOrdersCount().subscribe({
+      next: (countRes: any) => {
+        this.totalRecords = countRes.message || 0;
+        
+        // Step 2: Fetch paginated data
+        this.purchaseOrderService
+          .getPurchaseOrders(limitStart, this.pageSize, orderBy)
+          .subscribe({
+            next: (response) => {
+              this.orders = response.data || [];
+              this.loading = false;
+            },
+            error: (err) => {
+              console.error('Error loading purchase orders:', err);
+              this.error = 'Failed to load purchase orders. Please try again.';
+              this.loading = false;
+              this.orders = [];
+            }
+          });
+      },
+      error: (err) => {
+        console.error('Failed to get count:', err);
+        // Fallback
+        this.purchaseOrderService
+          .getPurchaseOrders(limitStart, this.pageSize, orderBy)
+          .subscribe({
+            next: (response) => {
+              this.orders = response.data || [];
+              this.loading = false;
+            },
+            error: (e) => this.loading = false
+          });
+      }
+    });
   }
 
   get totalPages(): number {

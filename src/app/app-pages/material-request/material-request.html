@@ -212,6 +212,17 @@
       } @else {
         <!-- View Mode: Show different buttons based on state -->
         <div class="d-flex gap-2 justify-content-end">
+          <!-- Save Changes (Draft and Owner) -->
+          @if (canEdit) {
+            <button 
+              class="btn btn-primary px-4 py-2 rounded-pill" 
+              (click)="update()"
+              [disabled]="updating">
+              <span *ngIf="updating" class="spinner-border spinner-border-sm me-2"></span>
+              <i class="feather icon-save"></i> {{ updating ? 'Saving...' : 'Save Changes' }}
+            </button>
+          }
+
           <!-- Submit to Collector (Draft only, owner only) -->
           @if (canSubmitToCollector) {
             <button 

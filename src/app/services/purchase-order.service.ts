@@ -42,6 +42,20 @@ export class PurchaseOrderService {
   }
 
   /**
+   * Get total count of Purchase Orders matching the filters
+   */
+  getPurchaseOrdersCount(filters?: any): Observable<any> {
+    return this.http.post(
+      `${this.baseUrl}/api/method/frappe.client.get_count`,
+      {
+        doctype: 'Purchase Order',
+        filters: filters || {}
+      },
+      { withCredentials: true }
+    );
+  }
+
+  /**
    * Get a single Purchase Order by ID
    * @param orderId - Purchase Order ID
    */
