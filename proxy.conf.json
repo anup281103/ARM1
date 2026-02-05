@@ -1,6 +1,6 @@
 {
   "/api": {
-    "target": "http://10.120.9.27:8000",
+    "target": "http://s1.inxeoz.com",
     "secure": false,
     "changeOrigin": true,
     "cookieDomainRewrite": {
@@ -10,7 +10,7 @@
       "^/api": "/api"
     },
     "headers": {
-      "Origin": "http://10.120.9.27:8000"
+      "Origin": "http://s1.inxeoz.com"
     },
     "logLevel": "debug"
   }

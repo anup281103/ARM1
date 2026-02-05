@@ -7,8 +7,14 @@
       Purchase Order {{ purchaseOrder?.name || purchaseOrderId }}
     </h3>
 
-    <div class="d-flex align-items-center gap-2 mt-2">
-      <span *ngIf="purchaseOrder">Status: <i class="feather icon-check-circle"></i> {{ purchaseOrder.status }}</span>
+    <div class="d-flex align-items-center justify-content-between gap-2 mt-2">
+      <span *ngIf="purchaseOrder" class="fs-5">
+        Status: 
+        <span [class]="getHeaderStatus().cssClass + ' p-2 px-3 rounded-pill shadow-sm'">
+           <i [class]="'feather ' + getHeaderStatus().icon + ' me-1'"></i> 
+           {{ getHeaderStatus().label }}
+        </span>
+      </span>
     </div>
   </div>
 
@@ -171,7 +177,7 @@
     </div>
 
     <!-- ITEMS -->
-    <div class="card" *ngIf="purchaseOrder && !loading && !error">
+    <div class="card mb-5" *ngIf="purchaseOrder && !loading && !error">
       <div class="card-body">
 
         <h6 class="text-uppercase text-muted mb-3">
@@ -211,6 +217,42 @@
         </div>
 
       </div>
+    </div>
+    
+    <!-- ACTIONS -->
+    <div class="d-flex gap-2 justify-content-end mt-4 mb-5" 
+         *ngIf="purchaseOrder && !loading && !error">
+      
+      <!-- Create Receipt Action: Show if not fully received -->
+      <button class="btn btn-primary shadow-sm"
+              *ngIf="(purchaseOrder.per_received < 100) && purchaseOrder.status !== 'Draft' && purchaseOrder.status !== 'Closed'"
+              (click)="createPurchaseReceipt()" 
+              [disabled]="creatingReceipt">
+            <span *ngIf="creatingReceipt" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+            <i class="feather icon-package me-1" *ngIf="!creatingReceipt"></i>
+            Create Purchase Receipt
+      </button>
+
+      <!-- Create Invoice Action: Show if fully received but not fully billed -->
+      <button class="btn btn-warning text-dark shadow-sm"
+              *ngIf="(purchaseOrder.per_billed < 100) && (purchaseOrder.per_received >= 100) && purchaseOrder.status !== 'Draft' && purchaseOrder.status !== 'Closed'" 
+              (click)="createPurchaseInvoice()" 
+              [disabled]="creatingInvoice">
+            <span *ngIf="creatingInvoice" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+            <i class="feather icon-file-text me-1" *ngIf="!creatingInvoice"></i>
+            Create Purchase Invoice
+      </button>
+
+      <!-- Make Payment Action: Show if there is billing progress -->
+      <button class="btn btn-success shadow-sm"
+              *ngIf="(purchaseOrder.per_billed > 0) && purchaseOrder.status !== 'Completed' && purchaseOrder.status !== 'Closed'"
+              (click)="createPayment()" 
+              [disabled]="creatingPayment">
+            <span *ngIf="creatingPayment" class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+            <i class="feather icon-credit-card me-1" *ngIf="!creatingPayment"></i>
+            Make Payment
+      </button>
+
     </div>
 
   </div>

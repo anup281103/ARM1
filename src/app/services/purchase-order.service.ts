@@ -120,4 +120,93 @@ export class PurchaseOrderService {
       { withCredentials: true }
     );
   }
+
+  /**
+   * Create Purchase Receipt from Purchase Order
+   * @param data - Payload with purchase_order ID and items
+   */
+  createPurchaseReceipt(data: any): Observable<any> {
+    return this.http.post(
+      `${this.baseUrl}/api/method/create_purchase_receipt`,
+      data,
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Fetch mapped Purchase Invoice data from Purchase Order
+   * @param purchaseOrderId 
+   */
+  getMappedPurchaseInvoice(purchaseOrderId: string): Observable<any> {
+    return this.http.post(
+      `${this.baseUrl}/api/method/erpnext.buying.doctype.purchase_order.purchase_order.make_purchase_invoice`,
+      { source_name: purchaseOrderId },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Create (Save) a Purchase Invoice
+   * @param invoiceData - The document object returned by getMappedPurchaseInvoice
+   */
+  createPurchaseInvoice(invoiceData: any): Observable<any> {
+    return this.http.post(
+      `${this.baseUrl}/api/resource/Purchase Invoice`,
+      invoiceData,
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Submit a Purchase Invoice
+   * @param invoiceId 
+   */
+  submitPurchaseInvoice(invoiceId: string): Observable<any> {
+    return this.http.put(
+      `${this.baseUrl}/api/resource/Purchase Invoice/${invoiceId}`,
+      { docstatus: 1 },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Fetch mapped Payment Entry data from Purchase Invoice
+   * @param purchaseInvoiceId 
+   * @param partyType - Usually 'Supplier'
+   * @param party - Supplier Name
+   */
+  getMappedPaymentEntry(purchaseInvoiceId: string): Observable<any> {
+    return this.http.post(
+      `${this.baseUrl}/api/method/erpnext.accounts.doctype.payment_entry.payment_entry.get_payment_entry`,
+      { 
+        dt: 'Purchase Invoice', 
+        dn: purchaseInvoiceId 
+      },
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Create (Save) a Payment Entry
+   * @param paymentData 
+   */
+  createPaymentEntry(paymentData: any): Observable<any> {
+    return this.http.post(
+      `${this.baseUrl}/api/resource/Payment Entry`,
+      paymentData,
+      { withCredentials: true }
+    );
+  }
+
+  /**
+   * Get Purchase Invoices linked to a PO
+   * @param poName 
+   */
+  getLinkedPurchaseInvoices(poName: string): Observable<any> {
+    const filters = JSON.stringify([['purchase_order', '=', poName], ['docstatus', '=', 1]]);
+    return this.http.get(
+      `${this.baseUrl}/api/resource/Purchase Invoice?filters=${filters}&fields=["name", "grand_total", "outstanding_amount"]`,
+      { withCredentials: true }
+    );
+  }
 }
