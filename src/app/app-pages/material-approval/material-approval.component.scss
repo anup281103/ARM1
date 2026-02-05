@@ -44,3 +44,12 @@ h3{font-size: 1.4rem;
     .bg-gray{
     background-color: #c0c0c0;
 }
+table tr th:first-child{
+       min-width: 175px;
+}
+
+@media (max-width: 767px) {
+   table {
+     min-width: 700px;
+    }
+}

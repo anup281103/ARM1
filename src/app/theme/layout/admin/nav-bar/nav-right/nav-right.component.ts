@@ -30,6 +30,7 @@ export class NavRightComponent implements OnInit {
   chatMessage = false;
   friendId!: number;
   user: any = null;
+  role: any = null;
 
   private userService = inject(UserService);
   private authService = inject(AuthService);
@@ -69,6 +70,7 @@ export class NavRightComponent implements OnInit {
                 next: (rolesRes) => {
                   const roles = rolesRes.message || [];
                   this.userService.setRoles(roles);
+                  this.role = roles[0];
                   console.log('NavRight: Roles set:', roles);
                 },
                 error: (err) => console.error('NavRight: Failed to load roles', err)

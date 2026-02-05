@@ -1,4 +1,4 @@
-<ul class="navbar-nav ms-auto">
+<ul class="navbar-nav ms-auto d-flex align-items-center">
   <li>
     <div class="dropdown" ngbDropdown placement="auto">
       <a ngbDropdownToggle href="javascript:">
@@ -81,10 +81,11 @@
     </div>
   </li> -->
   <li>
-    <div class="dropdown drp-user" ngbDropdown placement="auto">
-      <a href="javascript:" ngbDropdownToggle>
-        <img src="assets\images\user\avtar-icon.png" class="img-radius wid-40" alt="User-Profile-Image" />
-        
+    <div class="dropdown drp-user " ngbDropdown placement="auto">
+      <a href="javascript:" ngbDropdownToggle class="d-flex gap-2 align-items-center justify-content-center ">
+       <span> <img src="assets\images\user\avtar-icon.png" class="img-radius wid-40" alt="User-Profile-Image" /></span>
+       <span class="d-flex flex-column text-white fw-bold "> {{ user?.full_name || user?.name || 'Guest' }} 
+       </span>
       </a>
       <div class="dropdown-menu dropdown-menu-end profile-notification" ngbDropdownMenu>
         <div class="pro-head">
