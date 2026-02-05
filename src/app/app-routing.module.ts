@@ -54,11 +54,6 @@ const routes: Routes = [
       },
 
       {
-        path: 'district-material-requests',
-        loadComponent: () => import('./app-pages/district-material-requests/district-material-requests.component').then((c) => c.DistrictMaterialRequestsComponent)
-      },
-
-      {
         path: 'purchase-order',
         loadComponent: () => import('./app-pages/purchase-order/purchaseorder').then((c) => c.Purchaseorder)
       },

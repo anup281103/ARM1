@@ -314,10 +314,25 @@ export class MaterialRequest implements OnInit {
       'Rejected': 'bg-danger',
       'Cancelled': 'bg-danger',
       // Document Status
-      'Submitted': 'bg-primary',
-      'Stopped': 'bg-dark'
+      'Submitted': 'bg-info text-dark',
+      'Stopped': 'bg-dark',
+      'Ordered': 'bg-info', 
+      'Partially Ordered': 'bg-warning'
     };
-    return statusMap[status] || 'bg-secondary';
+    return statusMap[status] || 'bg-gray';
+  }
+
+  /**
+   * Get display status based on logic: 
+   * If status is Draft or Pending, show workflow_state. Otherwise show status.
+   */
+  getDisplayStatus(data: any): string {
+    if (!data) return '';
+    const status = data.status;
+    if (['Draft', 'Pending'].includes(status)) {
+       return data.workflow_state || status;
+    }
+    return status;
   }
   
   /**

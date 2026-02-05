@@ -96,7 +96,7 @@
                   <th>Type</th>
                   <th>Company</th>
                   <th>District</th>
-                  <th>Items</th>
+                  <!-- <th>Items</th> -->
                   <th (click)="changeSort('status')" style="cursor: pointer;">
                     Status
                     <span *ngIf="sortColumn() === 'status'">
@@ -115,9 +115,9 @@
                   <td>{{ request.material_request_type }}</td>
                   <td>{{ request.company }}</td>
                   <td>{{ request.custom_district || '-' }}</td>
-                  <td>
+                  <!-- <td>
                     <span class="badge bg-info text-dark">{{ getItemsSummary(request.items) }}</span>
-                  </td>
+                  </td> -->
                   <td>
                     <span class="badge text-dark" [ngClass]="getStatusBadgeClass(getDisplayStatus(request)) ">
                       {{ getDisplayStatus(request) }}

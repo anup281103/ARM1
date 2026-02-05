@@ -1,13 +1,17 @@
-<div class="page-header">
+<div class="container-fluid ">
+
+<div class="page-header mb-3">
   <div class="page-block">
-    <h5>Material Request Approval</h5>
+    <h3>Material Request Approval</h3>
     @if (userDistrict()) {
-      <p class="text-muted">Review and approve/reject material requests from <strong>{{ userDistrict() }}</strong> district</p>
+      <p class="text-muted mb-0">Review and approve/reject material requests from <strong>{{ userDistrict() }}</strong> district</p>
     } @else {
-      <p class="text-muted">Review and approve/reject material requests</p>
+      <p class="text-muted mb-0">Review and approve/reject material requests</p>
     }
   </div>
 </div>
+
+
 
 <!-- User Session Card -->
 <!-- @if (user) {
@@ -88,8 +92,8 @@
           </div>
         } @else {
           <div class="table-responsive">
-            <table class="table table-hover">
-              <thead>
+            <table class="table table-hover table-bordered align-middle">
+              <thead class="table-light">
                 <tr>
                   <th (click)="changeSort('name')" style="cursor: pointer;">
                     Request ID
@@ -112,7 +116,7 @@
                   <th>Type</th>
                   <th>Company</th>
                   <th>District</th>
-                  <th>Items</th>
+                  <!-- <th>Items</th> -->
                   <th (click)="changeSort('status')" style="cursor: pointer;">
                     Status
                     <span *ngIf="sortColumn() === 'status'">
@@ -132,20 +136,18 @@
                   <td>{{ request.material_request_type }}</td>
                   <td>{{ request.company }}</td>
                   <td>{{ request.custom_district || '-' }}</td>
-                  <td>
+                  <!-- <td>
                     <span class="badge bg-info">{{ getItemsSummary(request.items) }}</span>
-                  </td>
+                  </td> -->
                   <td>
-                    <span class="badge" [ngClass]="getStatusBadgeClass(getDisplayStatus(request))">
+                    <span class="badge text-dark" [ngClass]="getStatusBadgeClass(getDisplayStatus(request))">
                       {{ getDisplayStatus(request) }}
                     </span>
                   </td>
                   <td class="text-center">
-                    <div class="btn-group btn-group-sm" role="group">
-                      <button class="btn btn-outline-info" (click)="viewRequestInForm(request)" title="View Details">
-                        <i class="feather icon-eye"></i> View
-                      </button>
-                    </div>
+                    <button class="btn btn-sm btn-primary" (click)="viewRequestInForm(request)" title="View Details">
+                      <i class="feather icon-eye"></i> 
+                    </button>
                   </td>
                 </tr>
               </tbody>
@@ -176,6 +178,7 @@
       </div>
     </div>
   </div>
+</div>
 </div>
 
 <!-- Optional: Request Details Section (can be expanded) -->

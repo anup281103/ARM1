@@ -232,7 +232,11 @@ export class MyMaterialRequestsComponent implements OnInit {
    * Get display status considering workflow state
    */
   getDisplayStatus(request: MaterialRequestData): string {
-    return request.workflow_state || request.status || 'Draft';
+    const status = request.status;
+    if (['Draft', 'Pending'].includes(status)) {
+      return request.workflow_state || status;
+    }
+    return status;
   }
 
   /**
@@ -247,8 +251,10 @@ export class MyMaterialRequestsComponent implements OnInit {
       'Rejected': 'bg-danger',
       'Cancelled': 'bg-danger',
       'Submitted': 'bg-info text-dark',
-      'Stopped': 'bg-dark'
+      'Stopped': 'bg-dark',
+      'Ordered': 'bg-info', 
+      'Partially Ordered': 'bg-warning '
     };
-    return statusMap[status] || 'bg-secondary';
+    return statusMap[status] || 'bg-grey';
   }
 }

@@ -37,13 +37,13 @@ export class NavBarComponent {
   }
 
   navCollapse() {
-    if (this.windowWidth >= 992) {
+    if (window.innerWidth >= 992) {
       this.NavCollapse.emit();
     }
   }
 
   navCollapseMob() {
-    if (this.windowWidth < 992) {
+    if (window.innerWidth < 992) {
       this.NavCollapsedMob.emit();
     }
   }

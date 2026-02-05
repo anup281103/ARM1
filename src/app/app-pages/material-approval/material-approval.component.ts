@@ -237,16 +237,22 @@ export class MaterialApprovalComponent implements OnInit {
       'Cancelled': 'bg-danger',
       // Document Status
       'Submitted': 'bg-info text-dark',
-      'Stopped': 'bg-dark'
+      'Stopped': 'bg-dark',
+      'Ordered': 'bg-info', 
+      'Partially Ordered': 'bg-warning'
     };
-    return statusMap[status] || 'bg-secondary';
+    return statusMap[status] || 'bg-gray';
   }
   
   /**
    * Get the display status - prefer workflow_state over status
    */
   getDisplayStatus(request: MaterialRequestData): string {
-    return request.workflow_state || request.status || 'Draft';
+    const status = request.status;
+    if (['Draft', 'Pending'].includes(status)) {
+      return request.workflow_state || status;
+    }
+    return status;
   }
   
   /**
